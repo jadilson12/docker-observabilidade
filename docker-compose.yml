@@ -1,0 +1,420 @@
+services:
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    container_name: fluent_bit
+    platform: linux/arm64
+    # restart: always
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./.docker/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      opensearch-init:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+        reservations:
+          memory: 32m
+
+  opensearch:
+    image: opensearchproject/opensearch:2
+    container_name: opensearch
+    # restart: always
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-ChangeMe_OpenSearch_2026!9}
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - ./.docker/opensearch/data:/usr/share/opensearch/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.opensearch
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2
+    container_name: opensearch_dashboards
+    # restart: always
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    volumes:
+      - ./.docker/opensearch/opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml:ro
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.opensearch-dashboards
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
+
+  opensearch-init:
+    image: curlimages/curl:latest
+    container_name: opensearch_init
+    restart: "no"
+    volumes:
+      - ./.docker/opensearch/init:/opensearch-init:ro
+      - ./.docker/opensearch/pipelines:/pipelines:ro
+    command: sh /opensearch-init/init-indices.sh
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+
+  opensearch-dashboards-init:
+    image: curlimages/curl:latest
+    container_name: opensearch_dashboards_init
+    restart: "no"
+    volumes:
+      - ./.docker/opensearch/init:/opensearch-init:ro
+    command: sh /opensearch-init/init-dashboards.sh
+    environment:
+      - OSD_URL=http://opensearch-dashboards:5601
+    depends_on:
+      opensearch-dashboards:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    # restart: always
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC collector (legado)
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.jaeger
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
+  data-prepper:
+    image: opensearchproject/data-prepper:2
+    container_name: data_prepper
+    # restart: always
+    volumes:
+      - ./.docker/data-prepper/pipelines.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml:ro
+      - ./.docker/data-prepper/data-prepper-config.yaml:/usr/share/data-prepper/config/data-prepper-config.yaml:ro
+    ports:
+      - "21890:21890"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.data-prepper
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.147.0
+    container_name: otel_collector
+    # restart: always
+    command: ["--config=/etc/otel/otel-config.yaml"]
+    volumes:
+      - ./.docker/otel:/etc/otel:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      jaeger:
+        condition: service_started
+      data-prepper:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
+      opensearch-init:
+        condition: service_completed_successfully
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.otel-collector
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
+  cadvisor:
+    image: wywywywy/docker_stats_exporter:latest
+    container_name: cadvisor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8080:9487"
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.cadvisor
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.10"
+        reservations:
+          memory: 16m
+          cpus: "0.05"
+
+  prometheus:
+    image: prom/prometheus@sha256:4a61322ac1103a0e3aea2a61ef1718422a48fa046441f299d71e660a3bc71ae9
+    container_name: prometheus
+    # restart: always
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.listen-address=:9292"
+    volumes:
+      - ./.docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./.docker/prometheus/data:/prometheus
+    ports:
+      - "9292:9292"
+    depends_on:
+      - otel-collector
+      - cadvisor
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.prometheus
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
+  grafana:
+    image: grafana/grafana:12.4
+    container_name: grafana
+    # restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_INSTALL_PLUGINS: "grafana-opensearch-datasource"
+    volumes:
+      - ./.docker/grafana/data:/var/lib/grafana
+      - ./.docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.grafana
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
+  postgres:
+    image: docker.io/postgres:17
+    container_name: postgres
+    restart: always
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.postgres
+        fluentd-async: "true"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres} # CHANGEME
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.docker/postgres/data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+        reservations:
+          memory: 128m
+          cpus: "0.10"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter@sha256:e96064f876226d94bb6ce48a4c4b3dd76edba91168ec1ab024e5c4b959310b0f
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.postgres-exporter
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.10"
+        reservations:
+          memory: 16m
+          cpus: "0.05"
+
+  web:
+    build: ./web
+    container_name: application-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/usr/src/app
+      - web_node_modules:/usr/src/app/node_modules
+    command: >
+      sh -c "npm install && exec npm run dev"
+    environment:
+      API_URL: http://api:8082
+      OPENSEARCH_URL: http://opensearch:9200
+      NODE_OPTIONS: --max-old-space-size=1024
+      OTEL_SDK_DISABLED: "false"
+      OTEL_SERVICE_NAME: aplication-exemple-web
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.web
+        fluentd-async: "true"
+
+  # Example applications instrumented for observability (same code, different services)
+  api:
+    build: ./api
+    container_name: application-api
+    depends_on:
+      - otel-collector
+      - postgres
+    ports:
+      - "8088:8082"
+      - "9465:9464"
+    volumes:
+      - ./api:/usr/src/app
+      - api_node_modules:/usr/src/app/node_modules
+    command: >
+      sh -c "npm install && npm run start:dev"
+    environment:
+      APP_NAME: application-api
+      OTEL_SDK_DISABLED: "false"
+      OTEL_SERVICE_NAME: aplication-exemple-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: observability
+      API_KEY: ${API_KEY:-api-secret-key}
+      NODE_OPTIONS: --max-old-space-size=768
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.api
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+          cpus: "0.3"
+        reservations:
+          memory: 256m
+          cpus: "0.10"
+
+volumes:
+  web_node_modules:
+  api_node_modules:

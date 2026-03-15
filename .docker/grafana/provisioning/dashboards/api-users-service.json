@@ -1,0 +1,184 @@
+{
+  "uid": "da0cd128-e7e4-44e8-9946-4820b45f4c76",
+  "title": "API \u2014 Users Service",
+  "tags": ["api", "users", "opentelemetry"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 20, "title": "P95 Lat\u00eancia Atual \u2014 Service",
+      "type": "stat", "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {"unit": "ms", "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 100}, {"color": "red", "value": 500}]}
+        }, "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(users_operation_duration_ms_bucket[5m])) by (le))", "legendFormat": "P95", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 21, "title": "Taxa de Erro Atual",
+      "type": "stat", "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {"unit": "percentunit", "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.01}, {"color": "red", "value": 0.05}]}
+        }, "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none"},
+      "targets": [{"expr": "(sum(rate(users_operation_duration_ms_count{status=\"error\"}[5m])) or vector(0)) / sum(rate(users_operation_duration_ms_count[5m]))", "legendFormat": "error rate", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 22, "title": "Throughput Atual (req/s)",
+      "type": "stat", "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {"unit": "reqps", "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }, "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none"},
+      "targets": [{"expr": "sum(rate(users_operation_duration_ms_count[5m]))", "legendFormat": "req/s", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 23, "title": "DB Connections Pending",
+      "type": "stat", "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}
+        }, "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none"},
+      "targets": [{"expr": "db_client_connection_pending_requests", "legendFormat": "pending", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 1, "title": "P95 Lat\u00eancia \u2014 Service Layer",
+      "type": "timeseries", "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "ms", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(users_operation_duration_ms_bucket[5m])) by (le, operation, status))", "legendFormat": "{{operation}} [{{status}}]", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 2, "title": "P95 Lat\u00eancia \u2014 Repository Layer",
+      "type": "timeseries", "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "ms", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(users_repository_query_duration_ms_bucket[5m])) by (le, operation))", "legendFormat": "repo {{operation}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 30, "title": "P50 / P95 / P99 \u2014 Service Layer",
+      "type": "timeseries", "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "ms", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate(users_operation_duration_ms_bucket[5m])) by (le))", "legendFormat": "P50", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}},
+        {"expr": "histogram_quantile(0.95, sum(rate(users_operation_duration_ms_bucket[5m])) by (le))", "legendFormat": "P95", "refId": "B", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}},
+        {"expr": "histogram_quantile(0.99, sum(rate(users_operation_duration_ms_bucket[5m])) by (le))", "legendFormat": "P99", "refId": "C", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}
+      ]
+    },
+    {
+      "id": 31, "title": "Heatmap \u2014 Distribui\u00e7\u00e3o de Lat\u00eancia (Service)",
+      "type": "heatmap", "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "options": {
+        "calculate": false,
+        "yAxis": {"unit": "ms"},
+        "color": {"scheme": "Oranges", "mode": "scheme"},
+        "cellGap": 1,
+        "tooltip": {"mode": "single"},
+        "legend": {"show": true}
+      },
+      "targets": [{"expr": "sum(rate(users_operation_duration_ms_bucket[5m])) by (le)", "legendFormat": "{{le}}", "refId": "A", "format": "heatmap", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 3, "title": "P95 Lat\u00eancia \u2014 PostgreSQL Queries",
+      "type": "timeseries", "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(db_client_operation_duration_bucket[5m])) by (le, db_operation_name))", "legendFormat": "pg {{db_operation_name}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 4, "title": "Throughput \u2014 req/s por opera\u00e7\u00e3o",
+      "type": "timeseries", "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "mean"]}},
+      "targets": [{"expr": "sum(rate(users_operation_duration_ms_count[5m])) by (operation, status)", "legendFormat": "{{operation}} [{{status}}]", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 5, "title": "Taxa de Erro (%)",
+      "type": "timeseries", "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {"unit": "percentunit", "min": 0, "max": 1, "custom": {"lineWidth": 2},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 0.05}]}
+        }, "overrides": []
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [{"expr": "(sum(rate(users_operation_duration_ms_count{status=\"error\"}[5m])) by (operation) or vector(0)) / sum(rate(users_operation_duration_ms_count[5m])) by (operation)", "legendFormat": "{{operation}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 32, "title": "HTTP Status \u2014 2xx / 4xx / 5xx",
+      "type": "timeseries", "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2}}, "overrides": [
+        {"matcher": {"id": "byRegexp", "options": ".*5.*"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]},
+        {"matcher": {"id": "byRegexp", "options": ".*4.*"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "orange"}}]},
+        {"matcher": {"id": "byRegexp", "options": ".*2.*"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}]}
+      ]},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "mean"]}},
+      "targets": [{"expr": "sum(rate(http_server_duration_count[5m])) by (http_response_status_code)", "legendFormat": "{{http_response_status_code}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 6, "title": "P95 Lat\u00eancia HTTP por Rota",
+      "type": "timeseries", "gridPos": {"x": 0, "y": 36, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "ms", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["last", "max"]}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_server_duration_bucket[5m])) by (le, http_request_method, http_route)) * 1000", "legendFormat": "{{http_request_method}} {{http_route}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 33, "title": "DB Connections Pending (s\u00e9rie temporal)",
+      "type": "timeseries", "gridPos": {"x": 12, "y": 36, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {"expr": "db_client_connection_pending_requests", "legendFormat": "pending", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}},
+        {"expr": "db_client_connection_count", "legendFormat": "{{db_client_connection_state}}", "refId": "B", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}
+      ]
+    },
+    {
+      "id": 7, "title": "Usu\u00e1rios Criados (\u00faltima hora)",
+      "type": "stat", "gridPos": {"x": 0, "y": 44, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area"},
+      "targets": [{"expr": "sum(increase(users_created_total[1h]))", "legendFormat": "criados", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 8, "title": "Usu\u00e1rios Deletados (\u00faltima hora)",
+      "type": "stat", "gridPos": {"x": 6, "y": 44, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area"},
+      "targets": [{"expr": "sum(increase(users_deleted_total[1h]))", "legendFormat": "deletados", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    },
+    {
+      "id": 9, "title": "Conex\u00f5es DB \u2014 Pool",
+      "type": "timeseries", "gridPos": {"x": 12, "y": 44, "w": 12, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"lineWidth": 2}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{"expr": "db_client_connection_count", "legendFormat": "{{db_client_connection_state}}", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+# Dados locais dos containers (volumes Docker)
+# Conteudo ignorado, .gitkeep preservado para criar diretorios no clone
+.docker/clickhouse/data/*
+!.docker/clickhouse/data/.gitkeep
+.docker/clickhouse/logs/*
+!.docker/clickhouse/logs/.gitkeep
+.docker/minio/data/*
+!.docker/minio/data/.gitkeep
+.docker/opensearch/data/*
+!.docker/opensearch/data/.gitkeep
+.docker/opensearch/pipelines/*.json
+
+.docker/postgres/data/*
+!.docker/postgres/data/.gitkeep
+.docker/prometheus/data/*
+!.docker/prometheus/data/.gitkeep
+.docker/grafana/data/*
+!.docker/grafana/data/.gitkeep
+
+.playwright-mcp
+
+# Variáveis de ambiente locais
+.env
+.env.local
+
+# Node
+api/node_modules/
+api/dist/
+api/coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store

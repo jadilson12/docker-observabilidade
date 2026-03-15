@@ -1,0 +1,506 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Throughput Atual (req/s)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "displayName": "req/min",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "alias": "req/min",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "1m", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Taxa de Erro (5xx)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "alias": "erros 5xx/min",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "1m", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server AND attributes.http.status_code:>=500",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Usuários Criados (última hora)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["sum"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "alias": "criados",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "1h", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server AND (name:createUser OR name:\"POST /users\")",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Usuários Deletados (última hora)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["sum"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "alias": "deletados",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "1h", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server AND (name:deleteUser OR name:\"DELETE /users\")",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "DB Connections Pending",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "alias": "pending",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "1m", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Client AND attributes.db.system:*",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Latência P95 — Service (Traces)",
+      "type": "timeseries",
+      "gridPos": { "x": 6, "y": 4, "w": 18, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "max"] }
+      },
+      "targets": [
+        {
+          "alias": "P50",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [
+            {
+              "id": "1",
+              "type": "percentiles",
+              "field": "durationInMillis",
+              "settings": { "percents": ["50", "95", "99"] }
+            }
+          ],
+          "query": "kind:Server",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "DB Connections Pending (série temporal)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "max"] }
+      },
+      "targets": [
+        {
+          "alias": "DB ops",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Client AND attributes.db.system:*",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Conexões DB — Pool",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "mean"] }
+      },
+      "targets": [
+        {
+          "alias": "{{name}}",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            },
+            {
+              "field": "name.keyword",
+              "id": "3",
+              "settings": { "min_doc_count": "1", "order": "desc", "orderBy": "1", "size": "10" },
+              "type": "terms"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Client AND attributes.db.system:*",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Throughput por Operação (série temporal)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "mean"] }
+      },
+      "targets": [
+        {
+          "alias": "{{name}}",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            },
+            {
+              "field": "name.keyword",
+              "id": "3",
+              "settings": { "min_doc_count": "1", "order": "desc", "orderBy": "1", "size": "10" },
+              "type": "terms"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server",
+          "refId": "A",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "HTTP Status — 2xx / 4xx / 5xx",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "5xx" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
+          { "matcher": { "id": "byName", "options": "4xx" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] },
+          { "matcher": { "id": "byName", "options": "2xx" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "mean"] }
+      },
+      "targets": [
+        {
+          "alias": "2xx",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server AND attributes.http.status_code:>=200 AND attributes.http.status_code:<400",
+          "refId": "A",
+          "timeField": "@timestamp"
+        },
+        {
+          "alias": "4xx",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "4",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "3", "type": "count" }],
+          "query": "kind:Server AND attributes.http.status_code:>=400 AND attributes.http.status_code:<500",
+          "refId": "B",
+          "timeField": "@timestamp"
+        },
+        {
+          "alias": "5xx",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "6",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "5", "type": "count" }],
+          "query": "kind:Server AND attributes.http.status_code:>=500",
+          "refId": "C",
+          "timeField": "@timestamp"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Usuários Criados vs Deletados (histórico)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+      "datasource": { "type": "grafana-opensearch-datasource", "uid": "opensearch-traces" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "criados" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] },
+          { "matcher": { "id": "byName", "options": "deletados" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "sum"] }
+      },
+      "targets": [
+        {
+          "alias": "criados",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "2",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "1", "type": "count" }],
+          "query": "kind:Server AND (name:createUser OR name:\"POST /users\")",
+          "refId": "A",
+          "timeField": "@timestamp"
+        },
+        {
+          "alias": "deletados",
+          "bucketAggs": [
+            {
+              "field": "@timestamp",
+              "id": "4",
+              "settings": { "interval": "auto", "min_doc_count": "0", "trimEdges": "0" },
+              "type": "date_histogram"
+            }
+          ],
+          "metrics": [{ "id": "3", "type": "count" }],
+          "query": "kind:Server AND (name:deleteUser OR name:\"DELETE /users\")",
+          "refId": "B",
+          "timeField": "@timestamp"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["api", "users", "opensearch", "traces"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "API — Users Service (OpenSearch)",
+  "uid": "api-users-opensearch",
+  "version": 1
+}

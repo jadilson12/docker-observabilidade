@@ -8,7 +8,7 @@ datasources:
     url: http://opensearch:9200
     editable: true
     jsonData:
-      database: "ss4o_logs-otel-demo"
+      database: "ss4o_logs-otel-application-example"
       flavor: opensearch
       version: "2.19.0"
       timeField: "@timestamp"

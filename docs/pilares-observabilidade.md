@@ -42,13 +42,13 @@ Logs sao **registros textuais de eventos** que ocorreram em um sistema em um det
 
 ### Tipos de Logs
 
-| Tipo | Descricao | Exemplo |
-|------|-----------|---------|
-| **Structured Logs** | Formato padronizado (JSON) facil de parsear | `{"level":"error","msg":"DB timeout","duration_ms":5001}` |
+| Tipo                  | Descricao                                                 | Exemplo                                                   |
+| --------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| **Structured Logs**   | Formato padronizado (JSON) facil de parsear               | `{"level":"error","msg":"DB timeout","duration_ms":5001}` |
 | **Unstructured Logs** | Texto livre, legivel por humanos mas dificil de consultar | `[ERROR] 2024-01-15 DB connection timed out after 5001ms` |
-| **Application Logs** | Eventos gerados pela aplicacao | Erros, avisos, info de negocio |
-| **System Logs** | Eventos do sistema operacional | syslog, journald |
-| **Audit Logs** | Registro de acoes para compliance | Quem fez o que e quando |
+| **Application Logs**  | Eventos gerados pela aplicacao                            | Erros, avisos, info de negocio                            |
+| **System Logs**       | Eventos do sistema operacional                            | syslog, journald                                          |
+| **Audit Logs**        | Registro de acoes para compliance                         | Quem fez o que e quando                                   |
 
 ### Niveis de Severidade (RFC 5424)
 
@@ -95,24 +95,32 @@ Metricas sao **medicoes numericas agregadas ao longo do tempo**. Representam o e
 ### Tipos Fundamentais de Metricas
 
 #### Counter (Contador)
+
 Valor que **apenas aumenta**. Resetado ao reiniciar o processo.
+
 ```
 http_requests_total{method="POST", status="200"} 1043
 http_requests_total{method="GET",  status="404"} 27
 ```
+
 > Use para: numero de requisicoes, erros, tarefas processadas
 
 #### Gauge (Medidor)
+
 Valor que pode **subir ou descer** livremente.
+
 ```
 memory_usage_bytes 1073741824
 active_connections  47
 queue_size         312
 ```
+
 > Use para: uso de CPU/memoria, conexoes ativas, tamanho de filas
 
 #### Histogram (Histograma)
+
 Distribui observacoes em **buckets de faixa**. Permite calcular percentis.
+
 ```
 http_request_duration_seconds_bucket{le="0.1"}  240
 http_request_duration_seconds_bucket{le="0.5"}  567
@@ -121,15 +129,19 @@ http_request_duration_seconds_bucket{le="+Inf"} 1000
 http_request_duration_seconds_sum   450.7
 http_request_duration_seconds_count 1000
 ```
+
 > Use para: latencia, tamanho de payload, tempo de processamento
 
 #### Summary (Resumo)
+
 Similar ao histograma, mas calcula **percentis no lado do cliente**.
+
 ```
 rpc_duration_seconds{quantile="0.5"}  0.047
 rpc_duration_seconds{quantile="0.9"}  0.143
 rpc_duration_seconds{quantile="0.99"} 0.891
 ```
+
 > Preferir Histogram em ambientes distribuidos (permite agregacao entre instancias)
 
 ### As Quatro Sinais de Ouro (Google SRE)
@@ -150,13 +162,15 @@ O Google SRE Book define quatro metricas essenciais para qualquer servico:
 ### RED Method (para servicos)
 
 Framework focado em **servicos de requisicao**:
+
 - **R**ate — Quantas requisicoes por segundo?
 - **E**rrors — Quantas requisicoes estao falhando?
-- **D**uration — Quanto tempo as requisicoes demoram?
+- **D**uration — Quanto tempo as requisicoes application-exampleram?
 
 ### USE Method (para recursos)
 
 Framework focado em **recursos de infraestrutura**:
+
 - **U**tilization — Qual percentual do recurso esta sendo usado?
 - **S**aturation — Ha fila de trabalho acumulando?
 - **E**rrors — Ha erros sendo reportados?
@@ -198,14 +212,14 @@ Trace ID: abc-123
 
 ### Conceitos Chave
 
-| Conceito | Descricao |
-|----------|-----------|
-| **Trace** | Representacao completa de uma requisicao de ponta a ponta |
-| **Span** | Unidade de trabalho dentro de um trace (uma operacao) |
-| **Trace ID** | Identificador unico que une todos os spans de uma requisicao |
-| **Span ID** | Identificador unico de cada span individual |
-| **Parent Span** | Span que originou o span atual (relacao pai-filho) |
-| **Context Propagation** | Mecanismo de passar o Trace ID entre servicos via headers |
+| Conceito                | Descricao                                                    |
+| ----------------------- | ------------------------------------------------------------ |
+| **Trace**               | Representacao completa de uma requisicao de ponta a ponta    |
+| **Span**                | Unidade de trabalho dentro de um trace (uma operacao)        |
+| **Trace ID**            | Identificador unico que une todos os spans de uma requisicao |
+| **Span ID**             | Identificador unico de cada span individual                  |
+| **Parent Span**         | Span que originou o span atual (relacao pai-filho)           |
+| **Context Propagation** | Mecanismo de passar o Trace ID entre servicos via headers    |
 
 ### Context Propagation
 
@@ -224,18 +238,21 @@ Headers padrao (W3C TraceContext):
 ### Instrumentacao: Auto vs Manual
 
 **Instrumentacao Automatica** (OpenTelemetry)
+
 - SDKs que interceptam frameworks populares (Express, Django, Spring)
 - Zero codigo adicional para cobertura basica
 - Cobre HTTP, banco de dados, filas automaticamente
 
 **Instrumentacao Manual**
+
 - Adiciona contexto de negocio que as libs nao conseguem capturar
 - Exemplo: qual usuario fez a requisicao, qual produto foi consultado
+
 ```javascript
-const span = tracer.startSpan('process-payment');
-span.setAttribute('payment.amount', 150.00);
-span.setAttribute('payment.currency', 'BRL');
-span.setAttribute('user.id', userId);
+const span = tracer.startSpan("process-payment");
+span.setAttribute("payment.amount", 150.0);
+span.setAttribute("payment.currency", "BRL");
+span.setAttribute("user.id", userId);
 // ... logica ...
 span.end();
 ```
@@ -244,12 +261,12 @@ span.end();
 
 Em sistemas de alto volume, capturar 100% dos traces e inviavel. Estrategias:
 
-| Estrategia | Descricao | Quando usar |
-|------------|-----------|-------------|
-| **Head Sampling** | Decisao no inicio da requisicao | Sistemas de baixo volume |
+| Estrategia        | Descricao                           | Quando usar                 |
+| ----------------- | ----------------------------------- | --------------------------- |
+| **Head Sampling** | Decisao no inicio da requisicao     | Sistemas de baixo volume    |
 | **Tail Sampling** | Decisao apos a requisicao completar | Preservar erros e anomalias |
-| **Probabilistic** | X% aleatorio das requisicoes | Baseline geral |
-| **Rate Limiting** | N traces por segundo | Controle de custo |
+| **Probabilistic** | X% aleatorio das requisicoes        | Baseline geral              |
+| **Rate Limiting** | N traces por segundo                | Controle de custo           |
 
 ### Grafana Tempo — backend de traces neste projeto
 
@@ -266,6 +283,7 @@ OTel Collector ──OTLP/gRPC──► Tempo:4317 (interno)
 ```
 
 **Recursos habilitados no datasource Grafana:**
+
 - **Node Graph** — visualizacao de dependencias entre servicos
 - **Trace to Logs** — abre os logs do OpenSearch filtrados pelo TraceID
 - **Service Map** — mapa de dependencias gerado a partir das metricas do Prometheus
@@ -283,7 +301,7 @@ O verdadeiro poder da observabilidade emerge quando os tres pilares sao **correl
                   "Qual servico?"
                         |
                   [TRACE mostra]
-                  "db-query esta demorando 1.8s"
+                  "db-query esta application-examplerando 1.8s"
                         |
                   [LOG revela]
                   "ERROR: table scan on orders (missing index)"
@@ -355,7 +373,7 @@ Nivel 3 - PROATIVO
   Temos traces, correlacionamos os pilares, fazemos SLOs
 
 Nivel 4 - OBSERVABILIDADE
-  Podemos debugar qualquer problema sem instrumentacao adicional
+  Poapplication-examples debugar qualquer problema sem instrumentacao adicional
   Usamos dados para decisoes de engenharia e produto
 ```
 
@@ -363,10 +381,10 @@ Nivel 4 - OBSERVABILIDADE
 
 ## Resumo
 
-| Pilar | Responde | Formato | Custo | Ferramenta neste projeto |
-|-------|----------|---------|-------|--------------------------|
-| **Logs** | O que aconteceu e por que? | Texto/JSON por evento | Alto (volume) | OpenSearch + Fluent Bit |
-| **Metricas** | Como o sistema esta se comportando? | Numerico time-series | Baixo | Prometheus + Grafana |
-| **Traces** | Onde o tempo esta sendo gasto? | Grafo de spans | Medio | Grafana Tempo + OpenSearch |
+| Pilar        | Responde                            | Formato               | Custo         | Ferramenta neste projeto   |
+| ------------ | ----------------------------------- | --------------------- | ------------- | -------------------------- |
+| **Logs**     | O que aconteceu e por que?          | Texto/JSON por evento | Alto (volume) | OpenSearch + Fluent Bit    |
+| **Metricas** | Como o sistema esta se comportando? | Numerico time-series  | Baixo         | Prometheus + Grafana       |
+| **Traces**   | Onde o tempo esta sendo gasto?      | Grafo de spans        | Medio         | Grafana Tempo + OpenSearch |
 
 Os tres pilares nao sao substitutos uns dos outros — sao **complementares**. Logs dao contexto rico, metricas dao visao sistemica, e traces conectam as pontas em sistemas distribuidos. A observabilidade real acontece quando os tres trabalham juntos.

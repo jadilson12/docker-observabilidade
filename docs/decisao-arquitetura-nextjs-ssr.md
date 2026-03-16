@@ -53,7 +53,7 @@ Browser (Client Component)
 ```
 Browser
   │
-  └─► GET /dashboard?from=now-1h&service=aplicacao-exemplo-api
+  └─► GET /dashboard?from=now-1h&service=application-example-api
         │
         └─► page.tsx (Server Component — executa no servidor)
               │
@@ -87,10 +87,10 @@ Browser → Internet/LAN → Next.js API → Rede interna → OpenSearch
 
 Com Server Components, o browser faz uma única request HTTP. Dentro do servidor, `page.tsx` chama o OpenSearch **diretamente na rede interna do Docker** (sem HTTP externo), recebe todos os dados e retorna o HTML pronto.
 
-| Abordagem | Round-trips do browser | Latência total |
-|-----------|----------------------|----------------|
-| Route Handlers (10 endpoints) | 10+ requests paralelas | Overhead de 10 conexões HTTP |
-| Server Component | 1 request | 1 render + N queries internas |
+| Abordagem                     | Round-trips do browser | Latência total                |
+| ----------------------------- | ---------------------- | ----------------------------- |
+| Route Handlers (10 endpoints) | 10+ requests paralelas | Overhead de 10 conexões HTTP  |
+| Server Component              | 1 request              | 1 render + N queries internas |
 
 ---
 
@@ -128,7 +128,7 @@ Com Route Handlers, essa verificação teria que ser replicada em cada endpoint 
 Filtros (período de tempo) e serviço selecionado vivem nos **query params da URL**:
 
 ```
-/dashboard?from=now-6h&service=aplicacao-exemplo-api
+/dashboard?from=now-6h&service=application-example-api
 ```
 
 Isso significa:
@@ -175,13 +175,13 @@ Com Server Components, toda a lógica de fetch está em dois arquivos:
 
 A decisão acima é específica para **dados lidos na renderização da página**. Route Handlers continuam sendo a escolha correta para:
 
-| Caso de uso | Por quê não Server Component |
-|-------------|-------------------------------|
-| Webhooks externos (GitHub, Stripe) | Precisam responder com status HTTP específicos |
+| Caso de uso                                         | Por quê não Server Component                      |
+| --------------------------------------------------- | ------------------------------------------------- |
+| Webhooks externos (GitHub, Stripe)                  | Precisam responder com status HTTP específicos    |
 | Endpoints consumidos por apps mobile ou outras SPAs | Cliente externo não pode chamar Server Components |
-| Server-Sent Events (SSE) / streaming | Precisam de controle total do Response stream |
-| Downloads de arquivos (CSV, PDF) | Precisam de headers `Content-Disposition` |
-| Integrações com ferramentas que precisam de REST | Postman, curl, scripts externos |
+| Server-Sent Events (SSE) / streaming                | Precisam de controle total do Response stream     |
+| Downloads de arquivos (CSV, PDF)                    | Precisam de headers `Content-Disposition`         |
+| Integrações com ferramentas que precisam de REST    | Postman, curl, scripts externos                   |
 
 ---
 

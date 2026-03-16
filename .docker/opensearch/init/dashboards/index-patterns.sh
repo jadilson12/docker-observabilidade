@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 upsert "index-pattern" "ip-logs" '{
   "attributes": {
-    "title": "ss4o_logs-otel-demo",
+    "title": "ss4o_logs-otel-application-example",
     "timeFieldName": "@timestamp"
   }
 }'
@@ -17,14 +17,7 @@ upsert "index-pattern" "ip-docker-logs" '{
 
 upsert "index-pattern" "ip-traces" '{
   "attributes": {
-    "title": "ss4o_traces-otel-aplicacao-example",
-    "timeFieldName": "@timestamp"
-  }
-}'
-
-upsert "index-pattern" "ip-metrics" '{
-  "attributes": {
-    "title": "ss4o_metrics-otel-demo",
+    "title": "ss4o_traces-otel-application-example",
     "timeFieldName": "@timestamp"
   }
 }'

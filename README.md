@@ -69,21 +69,21 @@ Stack completa de **observabilidade** baseada em Docker Compose, com uma aplica�
 
 ## Serviços e Portas
 
-| Serviço                   | Porta(s) no host       | Descrição                                            |
-|---------------------------|------------------------|------------------------------------------------------|
-| **web**                   | `3000`                 | Frontend Next.js (dashboard + CRUD de usuários)      |
-| **api**                   | `8088` / `9465`        | API NestJS (app em `:8082` interno, métricas `:9464`)|
-| **otel-collector**        | `4317`, `4318`, `8889` | OTel Collector (gRPC, HTTP, Prometheus scrape)       |
-| **tempo**                 | `3200`                 | Backend de traces distribuídos (Grafana Tempo)       |
-| **data-prepper**          | `21890`                | Processa traces OTLP → OpenSearch                    |
-| **opensearch**            | `9200`, `9600`         | Motor de busca/armazenamento de observabilidade      |
-| **opensearch-dashboards** | `5601`                 | UI do OpenSearch                                     |
-| **prometheus**            | `9292`                 | Banco de séries temporais de métricas                |
-| **grafana**               | `3001`                 | Dashboards (acesso anônimo, role Admin)              |
-| **fluent-bit**            | `24224`                | Agregador de logs de todos os containers             |
-| **postgres**              | `5432`                 | Banco de dados da aplicação                          |
-| **cadvisor**              | `8080`                 | Métricas de containers Docker                        |
-| **postgres-exporter**     | `9187`                 | Métricas do PostgreSQL para o Prometheus             |
+| Serviço                   | Porta(s) no host       | Descrição                                             |
+| ------------------------- | ---------------------- | ----------------------------------------------------- |
+| **web**                   | `3000`                 | Frontend Next.js (dashboard + CRUD de usuários)       |
+| **api**                   | `8088` / `9465`        | API NestJS (app em `:8082` interno, métricas `:9464`) |
+| **otel-collector**        | `4317`, `4318`, `8889` | OTel Collector (gRPC, HTTP, Prometheus scrape)        |
+| **tempo**                 | `3200`                 | Backend de traces distribuídos (Grafana Tempo)        |
+| **data-prepper**          | `21890`                | Processa traces OTLP → OpenSearch                     |
+| **opensearch**            | `9200`, `9600`         | Motor de busca/armazenamento de observabilidade       |
+| **opensearch-dashboards** | `5601`                 | UI do OpenSearch                                      |
+| **prometheus**            | `9292`                 | Banco de séries temporais de métricas                 |
+| **grafana**               | `3001`                 | Dashboards (acesso anônimo, role Admin)               |
+| **fluent-bit**            | `24224`                | Agregador de logs de todos os containers              |
+| **postgres**              | `5432`                 | Banco de dados da aplicação                           |
+| **cadvisor**              | `8080`                 | Métricas de containers Docker                         |
+| **postgres-exporter**     | `9187`                 | Métricas do PostgreSQL para o Prometheus              |
 
 ---
 
@@ -100,7 +100,7 @@ api ──OTLP/gRPC──► otel-collector:4317
        :21890          (Grafana)
           │
           ▼
- OpenSearch (ss4o_traces-otel-aplicacao-example)
+ OpenSearch (ss4o_traces-otel-application-example)
 ```
 
 ### Métricas
@@ -117,20 +117,20 @@ otel-collector:8889 ──scrape──►/
 
 ```
 todos os containers ──fluentd driver──► fluent-bit:24224 ──► OpenSearch (docker-logs)
-api ──OTLP logs──► otel-collector ──► OpenSearch (ss4o_logs-otel-demo)
+api ──OTLP logs──► otel-collector ──► OpenSearch (ss4o_logs-otel-application-example)
 ```
 
 ---
 
 ## Pilares de Observabilidade
 
-| Pilar    | Ferramenta                | URL                    |
-|----------|---------------------------|------------------------|
-| Traces   | Grafana Tempo             | http://localhost:3200  |
-| Traces   | OpenSearch Dashboards     | http://localhost:5601  |
-| Logs     | OpenSearch Dashboards     | http://localhost:5601  |
-| Métricas | Grafana                   | http://localhost:3001  |
-| Métricas | Prometheus                | http://localhost:9292  |
+| Pilar    | Ferramenta            | URL                   |
+| -------- | --------------------- | --------------------- |
+| Traces   | Grafana Tempo         | http://localhost:3200 |
+| Traces   | OpenSearch Dashboards | http://localhost:5601 |
+| Logs     | OpenSearch Dashboards | http://localhost:5601 |
+| Métricas | Grafana               | http://localhost:3001 |
+| Métricas | Prometheus            | http://localhost:9292 |
 
 > Leia mais: [`docs/pilares-observabilidade.md`](docs/pilares-observabilidade.md)
 
@@ -158,6 +158,7 @@ docker compose up -d
 ```
 
 Na primeira execução:
+
 - `opensearch-init` cria índices e templates necessários
 - `opensearch-dashboards-init` importa dashboards automaticamente
 - A API roda as migrations do banco de dados na inicialização
@@ -195,13 +196,13 @@ Prepara o ambiente local do zero:
 ./scripts/setup.sh
 ```
 
-| Etapa | O que faz |
-|---|---|
-| Pré-requisitos | Valida docker, node (≥ 20) e npm |
+| Etapa           | O que faz                                                             |
+| --------------- | --------------------------------------------------------------------- |
+| Pré-requisitos  | Valida docker, node (≥ 20) e npm                                      |
 | Arquivos `.env` | Cria `.env` e `api/.env` a partir dos `.env.example` se não existirem |
-| Dependências | Executa `npm install` em `api/` e `web/` |
-| Postgres | Sobe o container via `docker compose up -d postgres` se necessário |
-| Banco de testes | Cria o banco `postgres_test` se não existir |
+| Dependências    | Executa `npm install` em `api/` e `web/`                              |
+| Postgres        | Sobe o container via `docker compose up -d postgres` se necessário    |
+| Banco de testes | Cria o banco `postgres_test` se não existir                           |
 
 ### `scripts/test.sh` — Execução de testes
 
@@ -282,7 +283,7 @@ Documentação Swagger interativa disponível em `http://localhost:8088/docs`.
 ### Usuários — `/users`
 
 | Método   | Rota         | Descrição                                 |
-|----------|--------------|-------------------------------------------|
+| -------- | ------------ | ----------------------------------------- |
 | `GET`    | `/users`     | Listar com paginação (`?page=1&limit=10`) |
 | `GET`    | `/users/:id` | Buscar por UUID                           |
 | `POST`   | `/users`     | Criar usuário                             |
@@ -292,7 +293,7 @@ Documentação Swagger interativa disponível em `http://localhost:8088/docs`.
 ### Agendamentos — `/appointments`
 
 | Método   | Rota                | Descrição             |
-|----------|---------------------|-----------------------|
+| -------- | ------------------- | --------------------- |
 | `GET`    | `/appointments`     | Listar todos          |
 | `GET`    | `/appointments/:id` | Buscar por UUID       |
 | `POST`   | `/appointments`     | Criar agendamento     |
@@ -301,12 +302,12 @@ Documentação Swagger interativa disponível em `http://localhost:8088/docs`.
 
 ### Outros
 
-| Método | Rota               | Descrição                                      |
-|--------|--------------------|------------------------------------------------|
-| `GET`  | `/`                | Health check da API                            |
-| `GET`  | `/health`          | Health check detalhado (db, memória, disco)    |
-| `GET`  | `/debug/error/500` | Força erro 500 (para testes de observabilidade)|
-| `GET`  | `/debug/error/502` | Força erro 502 (para testes de observabilidade)|
+| Método | Rota               | Descrição                                       |
+| ------ | ------------------ | ----------------------------------------------- |
+| `GET`  | `/`                | Health check da API                             |
+| `GET`  | `/health`          | Health check detalhado (db, memória, disco)     |
+| `GET`  | `/debug/error/500` | Força erro 500 (para testes de observabilidade) |
+| `GET`  | `/debug/error/502` | Força erro 502 (para testes de observabilidade) |
 
 > Leia mais: [`docs/health-check.md`](docs/health-check.md) · [`docs/domain.md`](docs/domain.md)
 
@@ -332,17 +333,17 @@ Acesse em `http://localhost:3000`.
 
 Dados consultados diretamente do OpenSearch via SSR (Next.js Server Components):
 
-| Seção                      | O que mostra                                                         |
-|----------------------------|----------------------------------------------------------------------|
-| KPIs                       | Total de requests, erros, latência média, p95, taxa de erros         |
-| Requests ao longo do tempo | Volume de requests por serviço                                       |
-| Latência                   | Percentis p50, p95, p99 ao longo do tempo                            |
-| Status HTTP                | Distribuição 2xx / 4xx / 5xx                                         |
-| Throughput por método      | GET / POST / PUT / DELETE ao longo do tempo                          |
-| Latência por rota          | Top 5 rotas por latência média                                       |
-| Top Endpoints              | Ranking por volume, latência avg e p95                               |
-| Logs por container         | Volume de logs de cada container                                     |
-| Operações de agendamentos  | Criações, visualizações, atualizações, remoções                      |
+| Seção                      | O que mostra                                                 |
+| -------------------------- | ------------------------------------------------------------ |
+| KPIs                       | Total de requests, erros, latência média, p95, taxa de erros |
+| Requests ao longo do tempo | Volume de requests por serviço                               |
+| Latência                   | Percentis p50, p95, p99 ao longo do tempo                    |
+| Status HTTP                | Distribuição 2xx / 4xx / 5xx                                 |
+| Throughput por método      | GET / POST / PUT / DELETE ao longo do tempo                  |
+| Latência por rota          | Top 5 rotas por latência média                               |
+| Top Endpoints              | Ranking por volume, latência avg e p95                       |
+| Logs por container         | Volume de logs de cada container                             |
+| Operações de agendamentos  | Criações, visualizações, atualizações, remoções              |
 
 Filtros: intervalo de tempo (15m até 30d), seleção de serviço e auto-refresh configurável.
 
@@ -362,18 +363,18 @@ CRUD completo com paginação.
 
 ### Suites da API
 
-| Suite | Comando | Descrição | Testes |
-|---|---|---|---|
-| Unitários | `npm test` | Serviços e guards com mocks | 71 |
-| Integração | `npm run test:integration` | Pipeline NestJS com banco mockado | 55 |
-| E2E | `npm run test:e2e` | Endpoints reais contra `postgres_test` | 61 |
-| Stress | `npm run test:stress` | Carga concorrente (50–100 req/s) | 8 |
+| Suite      | Comando                    | Descrição                              | Testes |
+| ---------- | -------------------------- | -------------------------------------- | ------ |
+| Unitários  | `npm test`                 | Serviços e guards com mocks            | 71     |
+| Integração | `npm run test:integration` | Pipeline NestJS com banco mockado      | 55     |
+| E2E        | `npm run test:e2e`         | Endpoints reais contra `postgres_test` | 61     |
+| Stress     | `npm run test:stress`      | Carga concorrente (50–100 req/s)       | 8      |
 
 ### Suites do Web
 
-| Suite | Comando | Descrição | Testes |
-|---|---|---|---|
-| Unitários | `npm test` | Componentes React e server actions | 50 |
+| Suite     | Comando    | Descrição                          | Testes |
+| --------- | ---------- | ---------------------------------- | ------ |
+| Unitários | `npm test` | Componentes React e server actions | 50     |
 
 ### Rodar individualmente (dentro do diretório)
 
@@ -396,12 +397,12 @@ npm test
 
 ## Documentação
 
-| Documento | Descrição |
-|---|---|
-| [`docs/testes.md`](docs/testes.md) | Estratégia de testes da API: ferramentas, camadas, mocks e como executar |
-| [`docs/domain.md`](docs/domain.md) | Entidades, regras de negócio, camadas e fluxos da API e do frontend |
-| [`docs/pilares-observabilidade.md`](docs/pilares-observabilidade.md) | Conceitos dos três pilares (traces, métricas, logs), Grafana Tempo e como estão implementados |
-| [`docs/opentelemetry-config.md`](docs/opentelemetry-config.md) | Configuração do OpenTelemetry na API e no Web: variáveis, SDK e instrumentação |
-| [`docs/health-check.md`](docs/health-check.md) | Endpoints de health check, indicadores verificados e integração com orquestradores |
-| [`docs/decisao-arquitetura-nextjs-ssr.md`](docs/decisao-arquitetura-nextjs-ssr.md) | ADR-001: decisão de usar SSR (Server Components) para acessar o OpenSearch |
-| [`stress-test/README.md`](stress-test/README.md) | Guia de testes de estresse com k6 |
+| Documento                                                                          | Descrição                                                                                     |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`docs/testes.md`](docs/testes.md)                                                 | Estratégia de testes da API: ferramentas, camadas, mocks e como executar                      |
+| [`docs/domain.md`](docs/domain.md)                                                 | Entidades, regras de negócio, camadas e fluxos da API e do frontend                           |
+| [`docs/pilares-observabilidade.md`](docs/pilares-observabilidade.md)               | Conceitos dos três pilares (traces, métricas, logs), Grafana Tempo e como estão implementados |
+| [`docs/opentelemetry-config.md`](docs/opentelemetry-config.md)                     | Configuração do OpenTelemetry na API e no Web: variáveis, SDK e instrumentação                |
+| [`docs/health-check.md`](docs/health-check.md)                                     | Endpoints de health check, indicadores verificados e integração com orquestradores            |
+| [`docs/decisao-arquitetura-nextjs-ssr.md`](docs/decisao-arquitetura-nextjs-ssr.md) | ADR-001: decisão de usar SSR (Server Components) para acessar o OpenSearch                    |
+| [`stress-test/README.md`](stress-test/README.md)                                   | Guia de testes de estresse com k6                                                             |

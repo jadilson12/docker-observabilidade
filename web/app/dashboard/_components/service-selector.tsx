@@ -1,21 +1,31 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Layers } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Layers } from "lucide-react";
 
 interface ServiceSelectorProps {
-  services: string[]
-  value: string
-  onChange: (value: string) => void
+  services: string[];
+  value: string;
+  onChange: (value: string) => void;
 }
 
 function shortName(s: string) {
   // Remove common prefixes for display brevity
-  return s.replace(/^aplication-exemple-/, "").replace(/^aplicacao-exemplo-/, "").replace(/^demo-/, "")
+  return s
+    .replace(/^aplication-exemple-/, "")
+    .replace(/^application-example-/, "")
+    .replace(/^application-example-/, "");
 }
 
-export function ServiceSelector({ services, value, onChange }: ServiceSelectorProps) {
-  const all = [{ id: "", label: "Todos" }, ...services.map((s) => ({ id: s, label: shortName(s) }))]
+export function ServiceSelector({
+  services,
+  value,
+  onChange,
+}: ServiceSelectorProps) {
+  const all = [
+    { id: "", label: "Todos" },
+    ...services.map((s) => ({ id: s, label: shortName(s) })),
+  ];
 
   return (
     <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
@@ -36,5 +46,5 @@ export function ServiceSelector({ services, value, onChange }: ServiceSelectorPr
         </Button>
       ))}
     </div>
-  )
+  );
 }

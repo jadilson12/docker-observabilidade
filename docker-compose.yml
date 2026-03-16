@@ -123,28 +123,6 @@ services:
         limits:
           memory: 32m
 
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: jaeger
-    # restart: always
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250" # gRPC collector (legado)
-    logging:
-      driver: fluentd
-      options:
-        fluentd-address: "localhost:24224"
-        tag: docker.jaeger
-        fluentd-async: "true"
-    deploy:
-      resources:
-        limits:
-          memory: 256m
-        reservations:
-          memory: 64m
-
   data-prepper:
     image: opensearchproject/data-prepper:2
     container_name: data_prepper
@@ -170,6 +148,29 @@ services:
         reservations:
           memory: 256m
 
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    # restart: always
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./.docker/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./.docker/tempo/data:/tmp/tempo
+    ports:
+      - "3200:3200"
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "localhost:24224"
+        tag: docker.tempo
+        fluentd-async: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 128m
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.147.0
     container_name: otel_collector
@@ -182,9 +183,9 @@ services:
       - "4318:4318"
       - "8889:8889"
     depends_on:
-      jaeger:
-        condition: service_started
       data-prepper:
+        condition: service_started
+      tempo:
         condition: service_started
       opensearch:
         condition: service_healthy
@@ -311,6 +312,7 @@ services:
       - "5432:5432"
     volumes:
       - ./.docker/postgres/data:/var/lib/postgresql/data
+      - ./.docker/postgres/init:/docker-entrypoint-initdb.d:ro
     deploy:
       resources:
         limits:

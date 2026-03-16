@@ -10,12 +10,12 @@ processors:
   batch:
 
 exporters:
-  otlp/jaeger:
-    endpoint: jaeger:4317
-    tls:
-      insecure: true
   otlp/dataprepper:
     endpoint: data-prepper:21890
+    tls:
+      insecure: true
+  otlp/tempo:
+    endpoint: tempo:4317
     tls:
       insecure: true
   opensearch:
@@ -33,7 +33,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/jaeger, opensearch, otlp/dataprepper]
+      exporters: [opensearch, otlp/dataprepper, otlp/tempo]
     metrics:
       receivers: [otlp]
       processors: [batch]

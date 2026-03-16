@@ -251,6 +251,25 @@ Em sistemas de alto volume, capturar 100% dos traces e inviavel. Estrategias:
 | **Probabilistic** | X% aleatorio das requisicoes | Baseline geral |
 | **Rate Limiting** | N traces por segundo | Controle de custo |
 
+### Grafana Tempo — backend de traces neste projeto
+
+O **Grafana Tempo** e o backend principal de armazenamento de traces nesta stack. Ele recebe traces via OTLP diretamente do OTel Collector e os disponibiliza para consulta no Grafana.
+
+```
+OTel Collector ──OTLP/gRPC──► Tempo:4317 (interno)
+                                    │
+                              armazena em disco
+                                    │
+                              Grafana:3001 ◄── datasource Tempo
+                                    │
+                              busca por Trace ID / servico / duracao
+```
+
+**Recursos habilitados no datasource Grafana:**
+- **Node Graph** — visualizacao de dependencias entre servicos
+- **Trace to Logs** — abre os logs do OpenSearch filtrados pelo TraceID
+- **Service Map** — mapa de dependencias gerado a partir das metricas do Prometheus
+
 ---
 
 ## A Correlacao Entre os Pilares
@@ -301,14 +320,15 @@ O `trace_id` e o elo de ligacao entre os tres pilares:
 O **OpenTelemetry (OTel)** e o projeto open-source que unifica a instrumentacao dos tres pilares sob uma API e SDK comuns, evitando vendor lock-in.
 
 ```
-+------------------+        +------------------+        +------------------+
-|   SUA APLICACAO  |        |   OTEL COLLECTOR |        |    BACKENDS      |
-|                  |        |                  |        |                  |
-| SDK OTel         | -----> | Receive          | -----> | Jaeger (traces)  |
-| - Logs           | OTLP   | Process          | -----> | Prometheus (met) |
-| - Metricas       |        | Export           | -----> | OpenSearch (logs)|
-| - Traces         |        |                  |        | Grafana (visual) |
-+------------------+        +------------------+        +------------------+
++------------------+        +------------------+        +---------------------+
+|   SUA APLICACAO  |        |   OTEL COLLECTOR |        |    BACKENDS         |
+|                  |        |                  |        |                     |
+| SDK OTel         | -----> | Receive          | -----> | Tempo  (traces)     |
+| - Logs           | OTLP   | Process          | -----> | OpenSearch (traces) |
+| - Metricas       |        | Export           | -----> | Prometheus (met)    |
+| - Traces         |        |                  |        | OpenSearch (logs)   |
++------------------+        +------------------+        | Grafana (visual)    |
+                                                        +---------------------+
 ```
 
 ### Componentes principais
@@ -343,10 +363,10 @@ Nivel 4 - OBSERVABILIDADE
 
 ## Resumo
 
-| Pilar | Responde | Formato | Custo | Ferramenta |
-|-------|----------|---------|-------|------------|
-| **Logs** | O que aconteceu e por que? | Texto/JSON por evento | Alto (volume) | OpenSearch, Loki, ELK |
-| **Metricas** | Como o sistema esta se comportando? | Numerico time-series | Baixo | Prometheus, InfluxDB |
-| **Traces** | Onde o tempo esta sendo gasto? | Grafo de spans | Medio | Jaeger, Tempo, Zipkin |
+| Pilar | Responde | Formato | Custo | Ferramenta neste projeto |
+|-------|----------|---------|-------|--------------------------|
+| **Logs** | O que aconteceu e por que? | Texto/JSON por evento | Alto (volume) | OpenSearch + Fluent Bit |
+| **Metricas** | Como o sistema esta se comportando? | Numerico time-series | Baixo | Prometheus + Grafana |
+| **Traces** | Onde o tempo esta sendo gasto? | Grafo de spans | Medio | Grafana Tempo + OpenSearch |
 
 Os tres pilares nao sao substitutos uns dos outros — sao **complementares**. Logs dao contexto rico, metricas dao visao sistemica, e traces conectam as pontas em sistemas distribuidos. A observabilidade real acontece quando os tres trabalham juntos.

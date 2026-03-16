@@ -15,7 +15,10 @@ web (Next.js)          api (NestJS)
         otel-collector
          ┌──────┴──────┐
          ▼             ▼
-       Jaeger     data-prepper → OpenSearch
+    data-prepper    Tempo → Grafana
+         │
+         ▼
+      OpenSearch
 ```
 
 - **Web** exporta apenas **traces** via OTLP/HTTP

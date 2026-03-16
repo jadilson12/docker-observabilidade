@@ -40,13 +40,13 @@ Stack completa de **observabilidade** baseada em Docker Compose, com uma aplica�
                           └────┬──────────┬───────────┘
                Traces/Logs     │          │  Métricas
             ┌──────────────────┤          ├──────────────────────┐
-            ▼                  ▼          ▼                      │
-       ┌─────────┐   ┌────────────────┐  ┌──────────────┐       │
-       │  Jaeger │   │  data-prepper  │  │  Prometheus   │       │
-       │  :16686 │   │  :21890        │  │  :9292        │       │
-       └─────────┘   └───────┬────────┘  └──────┬────────┘       │
-                             │ Traces             │ scrape        │
-                             ▼                   ▼               │
+            ▼                  ▼          ▼          ▼           │
+                    ┌────────────────┐  ┌──────┐  ┌──────────┐  │
+                    │  data-prepper  │  │Tempo │  │Prometheus│  │
+                    │  :21890        │  │:3200 │  │  :9292   │  │
+                    └───────┬────────┘  └──────┘  └────┬─────┘  │
+                             │ Traces                    │ scrape │
+                             ▼                           ▼        │
                       ┌────────────────────────────────────┐     │
                       │           OpenSearch :9200          │     │
                       │  índices: traces / logs / métricas  │     │
@@ -61,6 +61,7 @@ Stack completa de **observabilidade** baseada em Docker Compose, com uma aplica�
                       ┌──────────────────────────────────────┐   │
                       │  Grafana :3001                        │   │
                       │  datasources: Prometheus + OpenSearch │   │
+                      │              + Tempo                  │   │
                       └──────────────────────────────────────┘   │
 ```
 
@@ -73,7 +74,7 @@ Stack completa de **observabilidade** baseada em Docker Compose, com uma aplica�
 | **web**                   | `3000`                 | Frontend Next.js (dashboard + CRUD de usuários)      |
 | **api**                   | `8088` / `9465`        | API NestJS (app em `:8082` interno, métricas `:9464`)|
 | **otel-collector**        | `4317`, `4318`, `8889` | OTel Collector (gRPC, HTTP, Prometheus scrape)       |
-| **jaeger**                | `16686`, `14250`       | UI de traces distribuídos                            |
+| **tempo**                 | `3200`                 | Backend de traces distribuídos (Grafana Tempo)       |
 | **data-prepper**          | `21890`                | Processa traces OTLP → OpenSearch                    |
 | **opensearch**            | `9200`, `9600`         | Motor de busca/armazenamento de observabilidade      |
 | **opensearch-dashboards** | `5601`                 | UI do OpenSearch                                     |
@@ -93,12 +94,13 @@ Stack completa de **observabilidade** baseada em Docker Compose, com uma aplica�
 ```
 api ──OTLP/gRPC──► otel-collector:4317
                           │
-               ┌──────────┴──────────┐
-               ▼                     ▼
-           Jaeger               data-prepper:21890
-                                      │
-                                      ▼
-                             OpenSearch (ss4o_traces-otel-aplicacao-example)
+          ┌───────────────┬───────────────┐
+          ▼               ▼               ▼
+     data-prepper      Tempo:3200     OpenSearch
+       :21890          (Grafana)
+          │
+          ▼
+ OpenSearch (ss4o_traces-otel-aplicacao-example)
 ```
 
 ### Métricas
@@ -124,7 +126,7 @@ api ──OTLP logs──► otel-collector ──► OpenSearch (ss4o_logs-otel
 
 | Pilar    | Ferramenta                | URL                    |
 |----------|---------------------------|------------------------|
-| Traces   | Jaeger                    | http://localhost:16686 |
+| Traces   | Grafana Tempo             | http://localhost:3200  |
 | Traces   | OpenSearch Dashboards     | http://localhost:5601  |
 | Logs     | OpenSearch Dashboards     | http://localhost:5601  |
 | Métricas | Grafana                   | http://localhost:3001  |
@@ -398,7 +400,7 @@ npm test
 |---|---|
 | [`docs/testes.md`](docs/testes.md) | Estratégia de testes da API: ferramentas, camadas, mocks e como executar |
 | [`docs/domain.md`](docs/domain.md) | Entidades, regras de negócio, camadas e fluxos da API e do frontend |
-| [`docs/pilares-observabilidade.md`](docs/pilares-observabilidade.md) | Conceitos dos três pilares (traces, métricas, logs) e como estão implementados |
+| [`docs/pilares-observabilidade.md`](docs/pilares-observabilidade.md) | Conceitos dos três pilares (traces, métricas, logs), Grafana Tempo e como estão implementados |
 | [`docs/opentelemetry-config.md`](docs/opentelemetry-config.md) | Configuração do OpenTelemetry na API e no Web: variáveis, SDK e instrumentação |
 | [`docs/health-check.md`](docs/health-check.md) | Endpoints de health check, indicadores verificados e integração com orquestradores |
 | [`docs/decisao-arquitetura-nextjs-ssr.md`](docs/decisao-arquitetura-nextjs-ssr.md) | ADR-001: decisão de usar SSR (Server Components) para acessar o OpenSearch |

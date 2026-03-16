@@ -4,15 +4,16 @@
  * Sobe VUs progressivamente ate ruptura.
  * Mede taxa de erro e latencia separados por recurso.
  *
- * Alvo: api1:8082
+ * Alvo: api:8082
  * Uso:  docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/stress.js
  */
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Counter, Gauge, Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://api1:8082';
+const BASE_URL = __ENV.BASE_URL || 'http://api:8082';
 const API_KEY  = __ENV.API_KEY  || 'api-secret-key';
+const API_V1   = `${BASE_URL}/v1`;
 
 const serverErrorRate = new Rate('stress_server_error_rate');
 const errorCount      = new Counter('stress_errors_total');
@@ -64,7 +65,7 @@ export function setup() {
   const maxWait = 60;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: '3s' });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: '3s' });
       if (res.status > 0) { console.log(`api pronta (status ${res.status})`); return; }
     } catch (_) {}
     console.log(`aguardando api... (${i + 1}/${maxWait})`);
@@ -79,7 +80,7 @@ export default function () {
 
   if (roll < 0.25) {
     group('list_users', () => {
-      const res = http.get(`${BASE_URL}/users`, jsonHeaders);
+      const res = http.get(`${API_V1}/users`, jsonHeaders);
       listUserDuration.add(res.timings.duration);
       check(res, { 'list users - nao 5xx': (r) => r.status < 500 });
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
@@ -88,7 +89,7 @@ export default function () {
 
   } else if (roll < 0.45) {
     group('list_appointments', () => {
-      const res = http.get(`${BASE_URL}/appointments`, jsonHeaders);
+      const res = http.get(`${API_V1}/appointments`, jsonHeaders);
       listApptDuration.add(res.timings.duration);
       check(res, { 'list appts - nao 5xx': (r) => r.status < 500 });
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
@@ -98,7 +99,7 @@ export default function () {
   } else if (roll < 0.60) {
     group('create_user', () => {
       const res = http.post(
-        `${BASE_URL}/users`,
+        `${API_V1}/users`,
         JSON.stringify({ name: `Stress VU${__VU}`, email: uniqueEmail() }),
         jsonHeaders,
       );
@@ -116,7 +117,7 @@ export default function () {
   } else if (roll < 0.75) {
     group('create_appointment', () => {
       const res = http.post(
-        `${BASE_URL}/appointments`,
+        `${API_V1}/appointments`,
         JSON.stringify({ title: `Stress Appt VU${__VU}`, scheduledAt: futureDate() }),
         jsonHeaders,
       );
@@ -135,7 +136,7 @@ export default function () {
     group('get_appointment', () => {
       if (apptIds.length === 0) { serverErrorRate.add(0); return; }
       const id  = randomItem(apptIds);
-      const res = http.get(`${BASE_URL}/appointments/${id}`, jsonHeaders);
+      const res = http.get(`${API_V1}/appointments/${id}`, jsonHeaders);
       getApptDuration.add(res.timings.duration);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       res.status >= 500 ? errorCount.add(1) : successCount.add(1);
@@ -144,7 +145,7 @@ export default function () {
 
   } else {
     group('health_check', () => {
-      const res = http.get(`${BASE_URL}/`);
+      const res = http.get(`${BASE_URL}/health/liveness`);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'health - 200': (r) => r.status === 200 });
       if (!check(res, { 'health - nao 5xx': (r) => r.status < 500 })) {

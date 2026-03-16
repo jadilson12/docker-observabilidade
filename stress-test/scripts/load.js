@@ -9,15 +9,16 @@
  *    5% update appointment | 5% delete appointment
  *    3% health check
  *
- * Alvo: api1:8082
+ * Alvo: api:8082
  * Uso:  docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/load.js
  */
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://api1:8082';
+const BASE_URL = __ENV.BASE_URL || 'http://api:8082';
 const API_KEY  = __ENV.API_KEY  || 'api-secret-key';
+const API_V1   = `${BASE_URL}/v1`;
 
 const serverErrorRate       = new Rate('server_error_rate');
 const createUserDuration    = new Trend('duration_create_user',        true);
@@ -68,7 +69,7 @@ export function setup() {
   const maxWait = 60;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: '3s' });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: '3s' });
       if (res.status > 0) { console.log(`api pronta (status ${res.status})`); return; }
     } catch (_) {}
     console.log(`aguardando api... (${i + 1}/${maxWait})`);
@@ -83,7 +84,7 @@ export default function () {
   if (roll < 0.25) {
     // 25% - list users
     group('list_users', () => {
-      const res = http.get(`${BASE_URL}/users`, jsonHeaders);
+      const res = http.get(`${API_V1}/users`, jsonHeaders);
       listUserDuration.add(res.timings.duration);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'list users - 200': (r) => r.status === 200 });
@@ -93,7 +94,7 @@ export default function () {
   } else if (roll < 0.40) {
     // 15% - list appointments
     group('list_appointments', () => {
-      const res = http.get(`${BASE_URL}/appointments`, jsonHeaders);
+      const res = http.get(`${API_V1}/appointments`, jsonHeaders);
       listApptDuration.add(res.timings.duration);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'list appts - 200': (r) => r.status === 200 });
@@ -105,7 +106,7 @@ export default function () {
     group('get_user', () => {
       if (userIds.length === 0) { serverErrorRate.add(0); return; }
       const id  = randomItem(userIds);
-      const res = http.get(`${BASE_URL}/users/${id}`, jsonHeaders);
+      const res = http.get(`${API_V1}/users/${id}`, jsonHeaders);
       getUserDuration.add(res.timings.duration);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'get user - 200': (r) => r.status === 200 });
@@ -117,7 +118,7 @@ export default function () {
     group('get_appointment', () => {
       if (apptIds.length === 0) { serverErrorRate.add(0); return; }
       const id  = randomItem(apptIds);
-      const res = http.get(`${BASE_URL}/appointments/${id}`, jsonHeaders);
+      const res = http.get(`${API_V1}/appointments/${id}`, jsonHeaders);
       getApptDuration.add(res.timings.duration);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'get appt - 200': (r) => r.status === 200 });
@@ -128,7 +129,7 @@ export default function () {
     // 12% - create user
     group('create_user', () => {
       const res = http.post(
-        `${BASE_URL}/users`,
+        `${API_V1}/users`,
         JSON.stringify({ name: `Load VU${__VU}-${__ITER}`, email: uniqueEmail() }),
         jsonHeaders,
       );
@@ -146,7 +147,7 @@ export default function () {
     // 10% - create appointment
     group('create_appointment', () => {
       const res = http.post(
-        `${BASE_URL}/appointments`,
+        `${API_V1}/appointments`,
         JSON.stringify({ title: `Load Meeting VU${__VU}-${__ITER}`, scheduledAt: futureDate(1) }),
         jsonHeaders,
       );
@@ -166,7 +167,7 @@ export default function () {
       if (apptIds.length === 0) { serverErrorRate.add(0); return; }
       const id  = randomItem(apptIds);
       const res = http.put(
-        `${BASE_URL}/appointments/${id}`,
+        `${API_V1}/appointments/${id}`,
         JSON.stringify({ title: `Updated VU${__VU}`, scheduledAt: futureDate(2) }),
         jsonHeaders,
       );
@@ -180,7 +181,7 @@ export default function () {
     group('delete_appointment', () => {
       if (apptIds.length === 0) { serverErrorRate.add(0); return; }
       const id = apptIds.pop();
-      const res = http.del(`${BASE_URL}/appointments/${id}`, null, jsonHeaders);
+      const res = http.del(`${API_V1}/appointments/${id}`, null, jsonHeaders);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'delete appt - 204': (r) => r.status === 204 || r.status === 404 });
       if (res.status >= 500) console.error(`[FAIL] DELETE /appointments/${id} -> ${res.status}`);
@@ -189,7 +190,7 @@ export default function () {
   } else {
     // 3% - health check
     group('health_check', () => {
-      const res = http.get(`${BASE_URL}/`);
+      const res = http.get(`${BASE_URL}/health/liveness`);
       serverErrorRate.add(res.status >= 500 ? 1 : 0);
       check(res, { 'health - 200': (r) => r.status === 200 });
       if (res.status >= 500) console.error(`[FAIL] GET / -> ${res.status}`);

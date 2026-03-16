@@ -6,7 +6,7 @@ services:
     volumes:
       - ./scripts:/scripts:ro
     environment:
-      BASE_URL: http://api1:8082
+      BASE_URL: http://api:8082
       API_KEY: ${API_KEY:-api-secret-key}
     # Uso: docker compose -f docker-compose.k6.yml run --rm k6 run /scripts/<teste>.js
     command: run /scripts/smoke.js

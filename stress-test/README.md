@@ -1,12 +1,12 @@
 # Stress Tests com k6
 
-Testes de carga e stress para a API, executados **direto na `api1`** (sem load balancer).
+Testes de carga e stress para a API, executados **direto na `api`** (sem load balancer).
 
 ```
-[k6] --> [api1:8082]
+[k6] --> [api:8082]
 ```
 
-> O nginx (lb) está desativado. Todos os testes apontam direto para `api1`.
+> O nginx (lb) está desativado. Todos os testes apontam direto para `api`.
 
 ---
 
@@ -18,16 +18,16 @@ Testes de carga e stress para a API, executados **direto na `api1`** (sem load b
 | `load.js` | Carga normal/esperada de producao | ate 30 | ~4min |
 | `stress.js` | Stress gradual crescente | ate 250 | ~6min |
 | `spike.js` | Pico repentino de trafego | ate 200 | ~2min30 |
-| `breakpoint.js` | **Descobre o maximo da api1** — sobe ate 150 VUs ou colapso | ate 150 | ~5min |
+| `breakpoint.js` | **Descobre o maximo da api** — sobe ate 150 VUs ou colapso | ate 150 | ~5min |
 
 ---
 
 ## Breakpoint — como funciona
 
-O `breakpoint.js` e o teste principal para descobrir **ate onde a api1 aguenta** com os recursos atuais:
+O `breakpoint.js` e o teste principal para descobrir **ate onde a api aguenta** com os recursos atuais:
 
 ```
-api1:     0.3 vCPU  /  500m RAM
+api:     0.3 vCPU  /  500m RAM
 postgres: 0.5 vCPU  /  256m RAM  /  max_connections=100
 poolSize: 20 conexoes
 ```
@@ -51,7 +51,7 @@ O teste **nao aborta cedo** — deixa o app degradar naturalmente. So cancela se
 
 **Como interpretar o resultado:**
 
-- `0% erros` → api1 aguentou 150 VUs; aumente os limites de CPU/RAM para achar o real teto
+- `0% erros` → api aguentou 150 VUs; aumente os limites de CPU/RAM para achar o real teto
 - `<1% erros` → chegou perto do limite; o stage anterior e o ponto de escala
 - `1–5% erros` → degradacao detectada; veja nos logs `[5xx]` em qual VU count comecou
 - `5–20% erros` → ruptura encontrada; o stage anterior ao primeiro erro e o limite seguro
@@ -71,28 +71,28 @@ docker compose up -d
 
 ## Opcao 1: Rodar via Docker (recomendado)
 
-O k6 roda dentro da rede Docker e acessa `api1` pelo nome de servico.
+O k6 roda dentro da rede Docker e acessa `api` pelo nome de servico.
 
 ```bash
 # Smoke test (validacao basica — sempre rode esse primeiro)
 docker compose -f stress-test/docker-compose.k6.yml run --rm \
-  -e BASE_URL=http://api1:8082 k6 run /scripts/smoke.js
+  -e BASE_URL=http://api:8082 k6 run /scripts/smoke.js
 
 # Load test (carga normal)
 docker compose -f stress-test/docker-compose.k6.yml run --rm \
-  -e BASE_URL=http://api1:8082 k6 run /scripts/load.js
+  -e BASE_URL=http://api:8082 k6 run /scripts/load.js
 
 # Stress test (pressao crescente)
 docker compose -f stress-test/docker-compose.k6.yml run --rm \
-  -e BASE_URL=http://api1:8082 k6 run /scripts/stress.js
+  -e BASE_URL=http://api:8082 k6 run /scripts/stress.js
 
 # Spike test (pico repentino)
 docker compose -f stress-test/docker-compose.k6.yml run --rm \
-  -e BASE_URL=http://api1:8082 k6 run /scripts/spike.js
+  -e BASE_URL=http://api:8082 k6 run /scripts/spike.js
 
-# Breakpoint test — descobre o maximo da api1
+# Breakpoint test — descobre o maximo da api
 docker compose -f stress-test/docker-compose.k6.yml run --rm \
-  -e BASE_URL=http://api1:8082 k6 run /scripts/breakpoint.js
+  -e BASE_URL=http://api:8082 k6 run /scripts/breakpoint.js
 ```
 
 > Sempre use `--rm` para garantir que o container k6 seja removido apos o teste.
@@ -101,23 +101,23 @@ docker compose -f stress-test/docker-compose.k6.yml run --rm \
 
 ## Opcao 2: Rodar localmente (k6 instalado na maquina)
 
-A `api1` esta exposta na porta `8081` do host.
+A `api` esta exposta na porta `8081` do host.
 
 ```bash
 # Smoke test
-BASE_URL=http://localhost:8081 k6 run stress-test/scripts/smoke.js
+BASE_URL=http://localhost:8088 k6 run stress-test/scripts/smoke.js
 
 # Load test
-BASE_URL=http://localhost:8081 k6 run stress-test/scripts/load.js
+BASE_URL=http://localhost:8088 k6 run stress-test/scripts/load.js
 
 # Stress test
-BASE_URL=http://localhost:8081 k6 run stress-test/scripts/stress.js
+BASE_URL=http://localhost:8088 k6 run stress-test/scripts/stress.js
 
 # Spike test
-BASE_URL=http://localhost:8081 k6 run stress-test/scripts/spike.js
+BASE_URL=http://localhost:8088 k6 run stress-test/scripts/spike.js
 
 # Breakpoint test
-BASE_URL=http://localhost:8081 k6 run stress-test/scripts/breakpoint.js
+BASE_URL=http://localhost:8088 k6 run stress-test/scripts/breakpoint.js
 ```
 
 ### Instalar k6 (macOS)
@@ -135,7 +135,7 @@ Enquanto o teste roda, acompanhe nos dashboards:
 | Servico | URL | O que observar |
 |---|---|---|
 | **Grafana** | http://localhost:3001 | Latencia (P95/P99), taxa de erro, throughput, DB connections pending |
-| **Jaeger** | http://localhost:16686 | Traces — spans de requisicoes lentas |
+| **Tempo** | http://localhost:3200 | Traces — spans de requisicoes lentas |
 | **Prometheus** | http://localhost:9292 | Metricas brutas em tempo real |
 | **OpenSearch** | http://localhost:5601 | Logs dos containers |
 
@@ -175,8 +175,8 @@ Enquanto o teste roda, acompanhe nos dashboards:
 
 Quando o breakpoint mostrar onde o app quebra, as opcoes sao:
 
-1. **Mais instancias** — descomentar `api2`/`api3` no `docker-compose.yml` e reativar o nginx
-2. **Mais CPU/RAM** — aumentar os limites de `deploy.resources` na `api1`
+1. **Mais instancias** — adicionar novas instancias de `api` no `docker-compose.yml` com um load balancer na frente
+2. **Mais CPU/RAM** — aumentar os limites de `deploy.resources` na `api`
 3. **Pool maior** — aumentar `poolSize` no `app.module.ts` (respeitando `max_connections` do postgres)
 4. **pgBouncer** — connection pooler na frente do postgres para suportar mais conexoes
 5. **Cache** — adicionar uma camada de cache para queries de leitura (`GET /users`, `GET /users/:id`)

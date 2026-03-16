@@ -4,7 +4,7 @@
  * Valida o fluxo completo de ambos os recursos via API key.
  * Qualquer erro de 4xx/5xx inesperado e reportado.
  *
- * Alvo: api1:8082 (direto) ou LB
+ * Alvo: api:8082 (direto) ou LB
  * Uso:
  *   docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/smoke.js
  *   BASE_URL=http://localhost:8088 k6 run smoke.js
@@ -13,8 +13,9 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://api1:8082';
+const BASE_URL = __ENV.BASE_URL || 'http://api:8082';
 const API_KEY  = __ENV.API_KEY  || 'api-secret-key';
+const API_V1   = `${BASE_URL}/v1`;
 
 const responseTime = new Trend('custom_response_time', true);
 const serverErrors = new Counter('custom_server_errors');
@@ -47,7 +48,7 @@ export function setup() {
   const maxWait = 60;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: '3s' });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: '3s' });
       if (res.status > 0) { console.log(`api pronta (status ${res.status})`); return; }
     } catch (_) {}
     console.log(`aguardando api... (${i + 1}/${maxWait})`);
@@ -59,7 +60,7 @@ export function setup() {
 export default function () {
 
   // ── Health ──────────────────────────────────────────────────────────
-  const healthRes = http.get(`${BASE_URL}/`);
+  const healthRes = http.get(`${BASE_URL}/health/liveness`);
   responseTime.add(healthRes.timings.duration);
   if (!check(healthRes, { 'GET / - 200': (r) => r.status === 200 }))
     fail('GET /', healthRes);
@@ -67,7 +68,7 @@ export default function () {
   sleep(0.2);
 
   // ── Users CRUD ──────────────────────────────────────────────────────
-  const listUsersRes = http.get(`${BASE_URL}/users`, jsonHeaders);
+  const listUsersRes = http.get(`${API_V1}/users`, jsonHeaders);
   responseTime.add(listUsersRes.timings.duration);
   if (!check(listUsersRes, {
     'GET /users - 200':   (r) => r.status === 200,
@@ -77,7 +78,7 @@ export default function () {
   sleep(0.2);
 
   const createUserRes = http.post(
-    `${BASE_URL}/users`,
+    `${API_V1}/users`,
     JSON.stringify({ name: `Smoke VU${__VU} IT${__ITER}`, email: uniqueEmail() }),
     jsonHeaders,
   );
@@ -90,7 +91,7 @@ export default function () {
   const userId = JSON.parse(createUserRes.body).id;
   sleep(0.1);
 
-  const getUserRes = http.get(`${BASE_URL}/users/${userId}`, jsonHeaders);
+  const getUserRes = http.get(`${API_V1}/users/${userId}`, jsonHeaders);
   responseTime.add(getUserRes.timings.duration);
   if (!check(getUserRes, { 'GET /users/:id - 200': (r) => r.status === 200 }))
     fail(`GET /users/${userId}`, getUserRes);
@@ -98,7 +99,7 @@ export default function () {
   sleep(0.1);
 
   const putUserRes = http.put(
-    `${BASE_URL}/users/${userId}`,
+    `${API_V1}/users/${userId}`,
     JSON.stringify({ name: 'Smoke Updated' }),
     jsonHeaders,
   );
@@ -108,7 +109,7 @@ export default function () {
 
   sleep(0.1);
 
-  const delUserRes = http.del(`${BASE_URL}/users/${userId}`, null, jsonHeaders);
+  const delUserRes = http.del(`${API_V1}/users/${userId}`, null, jsonHeaders);
   responseTime.add(delUserRes.timings.duration);
   if (!check(delUserRes, { 'DELETE /users/:id - 204': (r) => r.status === 204 }))
     fail(`DELETE /users/${userId}`, delUserRes);
@@ -116,7 +117,7 @@ export default function () {
   sleep(0.3);
 
   // ── Appointments CRUD ────────────────────────────────────────────────
-  const listApptRes = http.get(`${BASE_URL}/appointments`, jsonHeaders);
+  const listApptRes = http.get(`${API_V1}/appointments`, jsonHeaders);
   responseTime.add(listApptRes.timings.duration);
   if (!check(listApptRes, {
     'GET /appointments - 200':   (r) => r.status === 200,
@@ -126,7 +127,7 @@ export default function () {
   sleep(0.2);
 
   const createApptRes = http.post(
-    `${BASE_URL}/appointments`,
+    `${API_V1}/appointments`,
     JSON.stringify({
       title: `Smoke Meeting VU${__VU} IT${__ITER}`,
       description: 'Smoke test appointment',
@@ -143,7 +144,7 @@ export default function () {
   const apptId = JSON.parse(createApptRes.body).id;
   sleep(0.1);
 
-  const getApptRes = http.get(`${BASE_URL}/appointments/${apptId}`, jsonHeaders);
+  const getApptRes = http.get(`${API_V1}/appointments/${apptId}`, jsonHeaders);
   responseTime.add(getApptRes.timings.duration);
   if (!check(getApptRes, { 'GET /appointments/:id - 200': (r) => r.status === 200 }))
     fail(`GET /appointments/${apptId}`, getApptRes);
@@ -151,7 +152,7 @@ export default function () {
   sleep(0.1);
 
   const putApptRes = http.put(
-    `${BASE_URL}/appointments/${apptId}`,
+    `${API_V1}/appointments/${apptId}`,
     JSON.stringify({ title: 'Smoke Updated Meeting', scheduledAt: futureDate(2) }),
     jsonHeaders,
   );
@@ -161,7 +162,7 @@ export default function () {
 
   sleep(0.1);
 
-  const delApptRes = http.del(`${BASE_URL}/appointments/${apptId}`, null, jsonHeaders);
+  const delApptRes = http.del(`${API_V1}/appointments/${apptId}`, null, jsonHeaders);
   responseTime.add(delApptRes.timings.duration);
   if (!check(delApptRes, { 'DELETE /appointments/:id - 204': (r) => r.status === 204 }))
     fail(`DELETE /appointments/${apptId}`, delApptRes);

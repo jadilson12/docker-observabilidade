@@ -4,15 +4,16 @@
  * Linha de base baixa → SPIKE → sustenta → QUEDA → recuperacao.
  * Verifica se o sistema absorve o pico sem erros 5xx.
  *
- * Alvo: api1:8082
+ * Alvo: api:8082
  * Uso:  docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/spike.js
  */
 import { check, sleep } from "k6";
 import http from "k6/http";
 import { Rate, Trend } from "k6/metrics";
 
-const BASE_URL = __ENV.BASE_URL || "http://api1:8082";
+const BASE_URL = __ENV.BASE_URL || "http://api:8082";
 const API_KEY  = __ENV.API_KEY  || "api-secret-key";
+const API_V1   = `${BASE_URL}/v1`;
 
 const serverErrorRate = new Rate("spike_server_error_rate");
 const reqDuration     = new Trend("spike_req_duration", true);
@@ -45,7 +46,7 @@ export function setup() {
   const maxWait = 60;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: "3s" });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: "3s" });
       if (res.status > 0) { console.log(`api pronta (status ${res.status})`); return; }
     } catch (_) {}
     console.log(`aguardando api... (${i + 1}/${maxWait})`);
@@ -59,14 +60,14 @@ export default function () {
 
   if (roll < 0.25) {
     // 25% - list users
-    const res = http.get(`${BASE_URL}/users`, jsonHeaders);
+    const res = http.get(`${API_V1}/users`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     check(res, { "spike list users - nao 5xx": (r) => r.status < 500 });
     serverErrorRate.add(res.status >= 500 ? 1 : 0);
 
   } else if (roll < 0.50) {
     // 25% - list appointments
-    const res = http.get(`${BASE_URL}/appointments`, jsonHeaders);
+    const res = http.get(`${API_V1}/appointments`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     check(res, { "spike list appts - nao 5xx": (r) => r.status < 500 });
     serverErrorRate.add(res.status >= 500 ? 1 : 0);
@@ -74,7 +75,7 @@ export default function () {
   } else if (roll < 0.65) {
     // 15% - create user
     const res = http.post(
-      `${BASE_URL}/users`,
+      `${API_V1}/users`,
       JSON.stringify({ name: `Spike VU${__VU}`, email: uniqueEmail() }),
       jsonHeaders,
     );
@@ -85,7 +86,7 @@ export default function () {
   } else if (roll < 0.80) {
     // 15% - create appointment
     const res = http.post(
-      `${BASE_URL}/appointments`,
+      `${API_V1}/appointments`,
       JSON.stringify({ title: `Spike Appt VU${__VU}`, scheduledAt: futureDate() }),
       jsonHeaders,
     );
@@ -99,14 +100,14 @@ export default function () {
   } else if (roll < 0.92) {
     // 12% - get appointment
     if (apptIds.length === 0) { serverErrorRate.add(0); return; }
-    const res = http.get(`${BASE_URL}/appointments/${randomItem(apptIds)}`, jsonHeaders);
+    const res = http.get(`${API_V1}/appointments/${randomItem(apptIds)}`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     check(res, { "spike get appt - nao 5xx": (r) => r.status < 500 });
     serverErrorRate.add(res.status >= 500 ? 1 : 0);
 
   } else {
     // 8% - health
-    const res = http.get(`${BASE_URL}/`);
+    const res = http.get(`${BASE_URL}/health/liveness`);
     reqDuration.add(res.timings.duration);
     check(res, { "spike health - 200": (r) => r.status === 200 });
     serverErrorRate.add(res.status >= 500 ? 1 : 0);

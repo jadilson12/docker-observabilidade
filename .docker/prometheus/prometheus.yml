@@ -9,7 +9,7 @@ scrape_configs:
 
   - job_name: 'api'
     static_configs:
-      - targets: ['api1:9464', 'api2:9464', 'api3:9464']
+      - targets: ['api:9464']
 
   - job_name: 'cadvisor'
     static_configs:

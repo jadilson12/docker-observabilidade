@@ -10,15 +10,16 @@
  *  - 500 Internal Server Error → GET /debug/error/500
  *  - 502 Bad Gateway           → GET /debug/error/502
  *
- * Alvo: api1:8082 (direto, sem LB)
+ * Alvo: api:8082 (direto, sem LB)
  * Uso:  docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/errors.js
  */
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Counter, Rate } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://api1:8082';
+const BASE_URL = __ENV.BASE_URL || 'http://api:8082';
 const API_KEY  = __ENV.API_KEY  || 'api-secret-key';
+const API_V1   = `${BASE_URL}/v1`;
 
 const got201 = new Counter('errors_201');
 const got400 = new Counter('errors_400');
@@ -57,12 +58,12 @@ export function setup() {
   const maxWait = 60;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: '3s' });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: '3s' });
       if (res.status > 0) {
         console.log(`api pronta (status ${res.status})`);
         // Seed para o 409 (usa key válida)
         const seed = http.post(
-          `${BASE_URL}/users`,
+          `${API_V1}/users`,
           JSON.stringify({ name: 'Conflict Seed', email: DUPE_EMAIL }),
           { headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY } },
         );
@@ -82,7 +83,7 @@ export default function () {
   // POST /appointments com API key válida → 201 Created
   group('force_201', () => {
     const r = http.post(
-      `${BASE_URL}/appointments`,
+      `${API_V1}/appointments`,
       JSON.stringify({
         title: `Reunião VU${__VU} IT${__ITER}`,
         description: 'Gerado pelo k6 error scenarios',
@@ -103,7 +104,7 @@ export default function () {
   // ------------------------------------------------------------------ 400
   // POST /users sem campos obrigatórios → NestJS ValidationPipe retorna 400
   group('force_400', () => {
-    const r1 = http.post(`${BASE_URL}/users`, JSON.stringify({}), jsonHeaders);
+    const r1 = http.post(`${API_V1}/users`, JSON.stringify({}), jsonHeaders);
     if (check(r1, { '400 - body vazio': (r) => r.status === 400 })) {
       got400.add(1);
     } else {
@@ -114,7 +115,7 @@ export default function () {
     sleep(0.1);
 
     const r2 = http.post(
-      `${BASE_URL}/users`,
+      `${API_V1}/users`,
       JSON.stringify({ name: 'Sem Email' }),
       jsonHeaders,
     );
@@ -132,7 +133,7 @@ export default function () {
   // Qualquer rota protegida sem key ou com key errada → ApiKeyGuard lança 401
   group('force_401', () => {
     // Sem x-api-key
-    const r1 = http.get(`${BASE_URL}/users`, noKeyHeaders);
+    const r1 = http.get(`${API_V1}/users`, noKeyHeaders);
     if (check(r1, { '401 - sem x-api-key': (r) => r.status === 401 })) {
       got401.add(1);
     } else {
@@ -143,7 +144,7 @@ export default function () {
     sleep(0.1);
 
     // Com key errada
-    const r2 = http.get(`${BASE_URL}/users`, wrongKeyHeaders);
+    const r2 = http.get(`${API_V1}/users`, wrongKeyHeaders);
     if (check(r2, { '401 - x-api-key errada': (r) => r.status === 401 })) {
       got401.add(1);
     } else {
@@ -157,7 +158,7 @@ export default function () {
   // ------------------------------------------------------------------ 404
   // GET /appointments/:id com UUID que não existe → NotFoundException → 404
   group('force_404', () => {
-    const r = http.get(`${BASE_URL}/appointments/${GHOST_ID}`, authHeaders);
+    const r = http.get(`${API_V1}/appointments/${GHOST_ID}`, jsonHeaders);
     if (check(r, { '404 - agenda inexistente': (r) => r.status === 404 })) {
       got404.add(1);
     } else {
@@ -172,7 +173,7 @@ export default function () {
   // POST /users com e-mail duplicado → ConflictException → 409
   group('force_409', () => {
     const r = http.post(
-      `${BASE_URL}/users`,
+      `${API_V1}/users`,
       JSON.stringify({ name: 'Conflict User', email: DUPE_EMAIL }),
       jsonHeaders,
     );
@@ -188,7 +189,7 @@ export default function () {
 
   // ------------------------------------------------------------------ 500
   group('force_500', () => {
-    const r = http.get(`${BASE_URL}/debug/error/500`, jsonHeaders);
+    const r = http.get(`${API_V1}/debug/error/500`, jsonHeaders);
     if (check(r, { '500 - erro interno simulado': (r) => r.status === 500 })) {
       got500.add(1);
     } else {
@@ -201,7 +202,7 @@ export default function () {
 
   // ------------------------------------------------------------------ 502
   group('force_502', () => {
-    const r = http.get(`${BASE_URL}/debug/error/502`, jsonHeaders);
+    const r = http.get(`${API_V1}/debug/error/502`, jsonHeaders);
     if (check(r, { '502 - bad gateway simulado': (r) => r.status === 502 })) {
       got502.add(1);
     } else {

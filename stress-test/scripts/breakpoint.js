@@ -2,22 +2,23 @@
  * Breakpoint Test - Encontra o ponto exato de ruptura
  *
  * Sobe VUs gradualmente misturando Users + Appointments.
- * Calibrado para api1 isolada: 0.3 vCPU / 500m RAM / poolSize=20 / pg max_connections=100
+ * Calibrado para api isolada: 0.3 vCPU / 500m RAM / poolSize=20 / pg max_connections=100
  *
  * Metricas observadas:
  *   - A partir de quantos VUs a taxa de erro dispara
  *   - A partir de quantos VUs a latencia p95 ultrapassa 2s
  *   - Qual o throughput maximo sustentavel
  *
- * Alvo: api1:8082
+ * Alvo: api:8082
  * Uso:  docker compose -f stress-test/docker-compose.k6.yml run --rm k6 run /scripts/breakpoint.js
  */
 import { check, sleep } from 'k6';
 import http from 'k6/http';
 import { Counter, Gauge, Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://api1:8082';
+const BASE_URL = __ENV.BASE_URL || 'http://api:8082';
 const API_KEY  = __ENV.API_KEY  || 'api-secret-key';
+const API_V1   = `${BASE_URL}/v1`;
 
 const errorRate    = new Rate('bp_error_rate');
 const reqDuration  = new Trend('bp_req_duration', true);
@@ -59,7 +60,7 @@ export function setup() {
   const maxWait = 30;
   for (let i = 0; i < maxWait; i++) {
     try {
-      const res = http.get(`${BASE_URL}/`, { timeout: '3s' });
+      const res = http.get(`${BASE_URL}/health/liveness`, { timeout: '3s' });
       if (res.status > 0) { console.log(`api pronta (status ${res.status})`); return; }
     } catch (_) {}
     console.log(`aguardando api... (${i + 1}/${maxWait})`);
@@ -74,7 +75,7 @@ export default function () {
 
   if (roll < 0.25) {
     // 25% - list users
-    const res = http.get(`${BASE_URL}/users`, jsonHeaders);
+    const res = http.get(`${API_V1}/users`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     const ok = res.status === 200;
     errorRate.add(res.status >= 500 ? 1 : 0);
@@ -83,7 +84,7 @@ export default function () {
 
   } else if (roll < 0.45) {
     // 20% - list appointments
-    const res = http.get(`${BASE_URL}/appointments`, jsonHeaders);
+    const res = http.get(`${API_V1}/appointments`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     const ok = res.status === 200;
     errorRate.add(res.status >= 500 ? 1 : 0);
@@ -93,7 +94,7 @@ export default function () {
   } else if (roll < 0.60) {
     // 15% - create user (pressiona pool + CPU)
     const res = http.post(
-      `${BASE_URL}/users`,
+      `${API_V1}/users`,
       JSON.stringify({ name: `BP VU${__VU} IT${__ITER}`, email: uniqueEmail() }),
       jsonHeaders,
     );
@@ -110,7 +111,7 @@ export default function () {
   } else if (roll < 0.75) {
     // 15% - create appointment (pressiona pool + CPU)
     const res = http.post(
-      `${BASE_URL}/appointments`,
+      `${API_V1}/appointments`,
       JSON.stringify({ title: `BP Appt VU${__VU} IT${__ITER}`, scheduledAt: futureDate() }),
       jsonHeaders,
     );
@@ -128,7 +129,7 @@ export default function () {
     // 13% - get user
     if (userIds.length === 0) { errorRate.add(0); return; }
     const id  = randomItem(userIds);
-    const res = http.get(`${BASE_URL}/users/${id}`, jsonHeaders);
+    const res = http.get(`${API_V1}/users/${id}`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     if (res.status === 200) { successCount.add(1); errorRate.add(0); }
     else if (res.status >= 500) { errorCount.add(1); errorRate.add(1); console.error(`[5xx] GET /users/${id} -> ${res.status}`); }
@@ -139,7 +140,7 @@ export default function () {
     // 9% - get appointment
     if (apptIds.length === 0) { errorRate.add(0); return; }
     const id  = randomItem(apptIds);
-    const res = http.get(`${BASE_URL}/appointments/${id}`, jsonHeaders);
+    const res = http.get(`${API_V1}/appointments/${id}`, jsonHeaders);
     reqDuration.add(res.timings.duration);
     if (res.status === 200) { successCount.add(1); errorRate.add(0); }
     else if (res.status >= 500) { errorCount.add(1); errorRate.add(1); console.error(`[5xx] GET /appointments/${id} -> ${res.status}`); }
@@ -148,7 +149,7 @@ export default function () {
 
   } else {
     // 3% - health
-    const res = http.get(`${BASE_URL}/`);
+    const res = http.get(`${BASE_URL}/health/liveness`);
     reqDuration.add(res.timings.duration);
     const ok  = res.status === 200;
     errorRate.add(ok ? 0 : 1);

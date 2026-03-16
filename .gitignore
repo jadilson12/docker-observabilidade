@@ -16,6 +16,8 @@
 !.docker/prometheus/data/.gitkeep
 .docker/grafana/data/*
 !.docker/grafana/data/.gitkeep
+.docker/tempo/data/*
+!.docker/tempo/data/.gitkeep
 
 .playwright-mcp
 

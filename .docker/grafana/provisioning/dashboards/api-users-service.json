@@ -165,14 +165,6 @@
       "targets": [{"expr": "sum(increase(users_created_total[1h]))", "legendFormat": "criados", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
     },
     {
-      "id": 8, "title": "Usu\u00e1rios Deletados (\u00faltima hora)",
-      "type": "stat", "gridPos": {"x": 6, "y": 44, "w": 6, "h": 4},
-      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
-      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}}, "overrides": []},
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area"},
-      "targets": [{"expr": "sum(increase(users_deleted_total[1h]))", "legendFormat": "deletados", "refId": "A", "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"}}]
-    },
-    {
       "id": 9, "title": "Conex\u00f5es DB \u2014 Pool",
       "type": "timeseries", "gridPos": {"x": 12, "y": 44, "w": 12, "h": 4},
       "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},

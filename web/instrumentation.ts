@@ -32,9 +32,6 @@ export async function register() {
       instrumentations: [
         getNodeAutoInstrumentations({
           "@opentelemetry/instrumentation-fs": { enabled: false },
-          "@opentelemetry/instrumentation-ioredis": { enabled: false },
-          "@opentelemetry/instrumentation-redis": { enabled: false },
-          "@opentelemetry/instrumentation-redis-4": { enabled: false },
         }),
       ],
     })

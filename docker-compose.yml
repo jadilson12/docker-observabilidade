@@ -3,7 +3,7 @@ services:
     image: fluent/fluent-bit:latest
     container_name: fluent_bit
     platform: linux/arm64
-    # restart: always
+    restart: unless-stopped
     ports:
       - "24224:24224"
       - "24224:24224/udp"
@@ -14,6 +14,7 @@ services:
         condition: service_healthy
       opensearch-init:
         condition: service_completed_successfully
+    networks: [observability]
     deploy:
       resources:
         limits:
@@ -24,7 +25,8 @@ services:
   opensearch:
     image: opensearchproject/opensearch:2
     container_name: opensearch
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true
@@ -64,7 +66,8 @@ services:
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
     container_name: opensearch_dashboards
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     ports:
       - "5601:5601"
     environment:
@@ -92,6 +95,7 @@ services:
     image: curlimages/curl:latest
     container_name: opensearch_init
     restart: "no"
+    networks: [observability]
     volumes:
       - ./.docker/opensearch/init:/opensearch-init:ro
       - ./.docker/opensearch/pipelines:/pipelines:ro
@@ -110,6 +114,7 @@ services:
     image: curlimages/curl:latest
     container_name: opensearch_dashboards_init
     restart: "no"
+    networks: [observability]
     volumes:
       - ./.docker/opensearch/init:/opensearch-init:ro
     command: sh /opensearch-init/init-dashboards.sh
@@ -126,7 +131,8 @@ services:
   data-prepper:
     image: opensearchproject/data-prepper:2
     container_name: data_prepper
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     volumes:
       - ./.docker/data-prepper/pipelines.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml:ro
       - ./.docker/data-prepper/data-prepper-config.yaml:/usr/share/data-prepper/config/data-prepper-config.yaml:ro
@@ -149,9 +155,10 @@ services:
           memory: 256m
 
   tempo:
-    image: grafana/tempo:2.6.1
+    image: grafana/tempo:2.9.0
     container_name: tempo
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
       - ./.docker/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
@@ -174,7 +181,8 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.147.0
     container_name: otel_collector
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     command: ["--config=/etc/otel/otel-config.yaml"]
     volumes:
       - ./.docker/otel:/etc/otel:ro
@@ -207,6 +215,8 @@ services:
   cadvisor:
     image: wywywywy/docker_stats_exporter:latest
     container_name: cadvisor
+    restart: unless-stopped
+    networks: [observability]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -229,7 +239,8 @@ services:
   prometheus:
     image: prom/prometheus@sha256:4a61322ac1103a0e3aea2a61ef1718422a48fa046441f299d71e660a3bc71ae9
     container_name: prometheus
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.listen-address=:9292"
@@ -257,7 +268,8 @@ services:
   grafana:
     image: grafana/grafana:12.4
     container_name: grafana
-    # restart: always
+    restart: unless-stopped
+    networks: [observability]
     ports:
       - "3001:3000"
     environment:
@@ -286,7 +298,8 @@ services:
   postgres:
     image: docker.io/postgres:17
     container_name: postgres
-    restart: always
+    restart: unless-stopped
+    networks: [observability]
     logging:
       driver: fluentd
       options:
@@ -325,6 +338,8 @@ services:
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter@sha256:e96064f876226d94bb6ce48a4c4b3dd76edba91168ec1ab024e5c4b959310b0f
     container_name: postgres-exporter
+    restart: unless-stopped
+    networks: [observability]
     environment:
       DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}?sslmode=disable
     ports:
@@ -351,6 +366,7 @@ services:
     build: ./web
     container_name: application-web
     restart: unless-stopped
+    networks: [observability]
     depends_on:
       - api
     ports:
@@ -378,6 +394,8 @@ services:
   api:
     build: ./api
     container_name: application-api
+    restart: unless-stopped
+    networks: [observability]
     depends_on:
       - otel-collector
       - postgres
@@ -390,7 +408,7 @@ services:
     command: >
       sh -c "npm install && npm run start:dev"
     environment:
-      APP_NAME: application-api
+      APP_NAME: aplication-exemple-api
       OTEL_SDK_DISABLED: "false"
       OTEL_SERVICE_NAME: aplication-exemple-api
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -420,3 +438,7 @@ services:
 volumes:
   web_node_modules:
   api_node_modules:
+
+networks:
+  observability:
+    external: true

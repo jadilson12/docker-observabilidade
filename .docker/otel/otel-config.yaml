@@ -18,7 +18,14 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
-  opensearch:
+  opensearch/traces:
+    http:
+      endpoint: http://opensearch:9200
+      tls:
+        insecure: true
+    dataset: otel
+    namespace: aplicacao-example
+  opensearch/logs:
     http:
       endpoint: http://opensearch:9200
       tls:
@@ -33,7 +40,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [opensearch, otlp/dataprepper, otlp/tempo]
+      exporters: [opensearch/traces, otlp/dataprepper, otlp/tempo]
     metrics:
       receivers: [otlp]
       processors: [batch]
@@ -41,4 +48,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [opensearch]
+      exporters: [opensearch/logs]

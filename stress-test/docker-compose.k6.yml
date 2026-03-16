@@ -14,4 +14,4 @@ services:
 networks:
   observabilidade_net:
     external: true
-    name: docker-observabilidade_default
+    name: observability

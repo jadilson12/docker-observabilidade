@@ -61,7 +61,7 @@ upsert "visualization" "viz-app-users-created" '{
     "description": "",
     "version": 1,
     "kibanaSavedObjectMeta": {
-      "searchSourceJSON": "{\"index\":\"ip-traces\",\"query\":{\"language\":\"kuery\",\"query\":\"name.keyword: \\\"POST /users\\\" AND attributes.http.status_code: 201\"},\"filter\":[]}"
+      "searchSourceJSON": "{\"index\":\"ip-traces\",\"query\":{\"language\":\"kuery\",\"query\":\"name.keyword: \\\"POST /v1/users\\\" AND attributes.http.status_code: 201\"},\"filter\":[]}"
     }
   }
 }'
@@ -74,7 +74,7 @@ upsert "visualization" "viz-app-users-viewed" '{
     "description": "",
     "version": 1,
     "kibanaSavedObjectMeta": {
-      "searchSourceJSON": "{\"index\":\"ip-traces\",\"query\":{\"language\":\"kuery\",\"query\":\"name.keyword: \\\"GET /users/:id\\\"\"},\"filter\":[]}"
+      "searchSourceJSON": "{\"index\":\"ip-traces\",\"query\":{\"language\":\"kuery\",\"query\":\"name.keyword: \\\"GET /v1/users/:id\\\"\"},\"filter\":[]}"
     }
   }
 }'

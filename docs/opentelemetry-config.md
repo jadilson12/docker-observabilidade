@@ -154,7 +154,7 @@ OTEL_SDK_DISABLED=true
 
 ```env
 OTEL_SDK_DISABLED=false
-OTEL_SERVICE_NAME=aplication-exemple-api
+OTEL_SERVICE_NAME=application-example-api
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 ```
@@ -163,7 +163,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 ```env
 OTEL_SDK_DISABLED=false
-OTEL_SERVICE_NAME=aplication-exemple-web
+OTEL_SERVICE_NAME=application-example-web
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ```
 

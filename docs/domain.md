@@ -324,21 +324,37 @@ O frontend consome a API via **Server Actions** (executadas no servidor Next.js)
 
 Acessa o **OpenSearch diretamente** (não passa pela API) para consultas de observabilidade:
 
-| Função                           | Índice OpenSearch                      | O que retorna                                           |
-| -------------------------------- | -------------------------------------- | ------------------------------------------------------- |
-| `getServices()`                  | `ss4o_traces-otel-application-example` | Lista de serviços ativos                                |
-| `getServiceCapabilities(name)`   | `ss4o_traces-otel-application-example` | Se o serviço tem operações de users/appointments        |
-| `getKpis(from, to, service?)`    | `ss4o_traces-otel-application-example` | KPIs: requests, erros, latência, operações por entidade |
-| `getRequestsOverTime(...)`       | `ss4o_traces-otel-application-example` | Volume de requests por intervalo de tempo               |
-| `getLatencyOverTime(...)`        | `ss4o_traces-otel-application-example` | Latência p50/p95/p99 ao longo do tempo                  |
-| `getStatusOverTime(...)`         | `ss4o_traces-otel-application-example` | Distribuição 2xx/4xx/5xx ao longo do tempo              |
-| `getLogCountOverTime(...)`       | `docker-logs`                          | Volume de logs por container                            |
-| `getThroughputByMethod(...)`     | `ss4o_traces-otel-application-example` | Throughput por método HTTP                              |
-| `getLatencyByRoute(...)`         | `ss4o_traces-otel-application-example` | Latência p95 por rota                                   |
-| `getLatencyByRouteOverTime(...)` | `ss4o_traces-otel-application-example` | Latência média das top 5 rotas ao longo do tempo        |
-| `getOpDistribution(...)`         | `ss4o_traces-otel-application-example` | Distribuição de operações (nome do span)                |
-| `getTopEndpoints(...)`           | `ss4o_traces-otel-application-example` | Top endpoints: requests, avg e p95 de latência          |
-| `getAppointmentsOverTime(...)`   | `ss4o_traces-otel-application-example` | Operações de agendamentos ao longo do tempo             |
+| Função                           | Índice OpenSearch                          | O que retorna                                           |
+| -------------------------------- | ------------------------------------------ | ------------------------------------------------------- |
+| `getServices()`                  | `ss4o_traces-otel-application-example-api` | Lista de serviços ativos                                |
+| `getServiceCapabilities(name)`   | `ss4o_traces-otel-application-example-api` | Se o serviço tem operações de users/appointments        |
+| `getKpis(from, to, service?)`    | `ss4o_traces-otel-application-example-api` | KPIs: requests, erros, latência, operações por entidade |
+| `getRequestsOverTime(...)`       | `ss4o_traces-otel-application-example-api` | Volume de requests por intervalo de tempo               |
+| `getLatencyOverTime(...)`        | `ss4o_traces-otel-application-example-api` | Latência p50/p95/p99 ao longo do tempo                  |
+| `getStatusOverTime(...)`         | `ss4o_traces-otel-application-example-api` | Distribuição 2xx/4xx/5xx ao longo do tempo              |
+| `getLogCountOverTime(...)`       | `docker-logs`                              | Volume de logs por container                            |
+| `getThroughputByMethod(...)`     | `ss4o_traces-otel-application-example-api` | Throughput por método HTTP                              |
+| `getLatencyByRoute(...)`         | `ss4o_traces-otel-application-example-api` | Latência p95 por rota                                   |
+| `getLatencyByRouteOverTime(...)` | `ss4o_traces-otel-application-example-api` | Latência média das top 5 rotas ao longo do tempo        |
+| `getOpDistribution(...)`         | `ss4o_traces-otel-application-example-api` | Distribuição de operações (nome do span)                |
+| `getTopEndpoints(...)`           | `ss4o_traces-otel-application-example-api` | Top endpoints: requests, avg e p95 de latência          |
+| `getAppointmentsOverTime(...)`   | `ss4o_traces-otel-application-example-api` | Operações de agendamentos ao longo do tempo             |
+
+**Campos do índice de traces usados nas queries:**
+
+| Campo                          | Uso                                                              |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `startTime`                    | Campo de tempo — filtros de intervalo e eixo do `date_histogram` |
+| `endTime`                      | Combinado com `startTime` via Painless script para calcular duração |
+| `kind.keyword`                 | Filtro por tipo de span (`"Server"`)                             |
+| `resource.service.name.keyword` | Filtro por serviço                                              |
+| `name.keyword`                 | Nome da operação / rota HTTP                                     |
+| `attributes.http.status_code`  | Código de status HTTP                                            |
+| `attributes.http.method.keyword` | Método HTTP (GET, POST, etc.)                                  |
+| `attributes.http.target.keyword` | Rota da requisição (ex: `/v1/users`)                           |
+
+> A latência é calculada dinamicamente via **Painless script** no OpenSearch:
+> `doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()`
 
 **Intervalo automático de agregação** (`autoInterval`):
 

@@ -100,7 +100,7 @@ api ──OTLP/gRPC──► otel-collector:4317
        :21890          (Grafana)
           │
           ▼
- OpenSearch (ss4o_traces-otel-application-example)
+ OpenSearch (ss4o_traces-otel-application-example-api)
 ```
 
 ### Métricas
@@ -249,9 +249,9 @@ OPENSEARCH_INITIAL_ADMIN_PASSWORD=ChangeMe_OpenSearch_2026!9
 ```env
 PORT=8082
 NODE_ENV=development
-APP_NAME=aplication-exemple-api
+APP_NAME=application-example-api
 
-OTEL_SERVICE_NAME=aplication-exemple-api
+OTEL_SERVICE_NAME=application-example-api
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
@@ -267,11 +267,12 @@ API_KEY=api-secret-key
 ### Web (`web/.env`)
 
 ```env
-OTEL_SERVICE_NAME=aplication-exemple-web
+OTEL_SERVICE_NAME=application-example-web
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 OPENSEARCH_URL=http://localhost:9200
 API_URL=http://localhost:8082
+NODE_OPTIONS=--max-old-space-size=1024
 ```
 
 ---

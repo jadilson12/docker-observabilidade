@@ -151,19 +151,19 @@ export async function getKpis(
       bool: {
         must: [{ term: { "kind.keyword": "Server" } }],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
     },
     aggs: {
-      total: { value_count: { field: "@timestamp" } },
+      total: { value_count: { field: "startTime" } },
       errors: {
         filter: { range: { "attributes.http.status_code": { gte: 400 } } },
       },
-      avg_latency: { avg: { field: "durationInMillis" } },
+      avg_latency: { avg: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" } } },
       percentiles: {
-        percentiles: { field: "durationInMillis", percents: [95] },
+        percentiles: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" }, percents: [95] },
       },
       users_created: {
         filter: {
@@ -324,7 +324,7 @@ export async function getRequestsOverTime(
       bool: {
         must: [{ term: { "kind.keyword": "Server" } }],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -332,7 +332,7 @@ export async function getRequestsOverTime(
     aggs: {
       over_time: {
         date_histogram: {
-          field: "@timestamp",
+          field: "startTime",
           fixed_interval: autoInterval(from, to),
           min_doc_count: 0,
           extended_bounds: { min: from, max: to },
@@ -374,10 +374,10 @@ export async function getLatencyOverTime(
       bool: {
         must: [
           { term: { "kind.keyword": "Server" } },
-          { exists: { field: "durationInMillis" } },
+          { exists: { field: "endTime" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -385,14 +385,14 @@ export async function getLatencyOverTime(
     aggs: {
       over_time: {
         date_histogram: {
-          field: "@timestamp",
+          field: "startTime",
           fixed_interval: autoInterval(from, to),
           min_doc_count: 0,
           extended_bounds: { min: from, max: to },
         },
         aggs: {
           latency: {
-            percentiles: { field: "durationInMillis", percents: [50, 95, 99] },
+            percentiles: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" }, percents: [50, 95, 99] },
           },
         },
       },
@@ -431,7 +431,7 @@ export async function getStatusOverTime(
           { exists: { field: "attributes.http.status_code" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -439,7 +439,7 @@ export async function getStatusOverTime(
     aggs: {
       over_time: {
         date_histogram: {
-          field: "@timestamp",
+          field: "startTime",
           fixed_interval: autoInterval(from, to),
           min_doc_count: 0,
           extended_bounds: { min: from, max: to },
@@ -535,7 +535,7 @@ export async function getThroughputByMethod(
           { exists: { field: "attributes.http.method" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -543,7 +543,7 @@ export async function getThroughputByMethod(
     aggs: {
       over_time: {
         date_histogram: {
-          field: "@timestamp",
+          field: "startTime",
           fixed_interval: autoInterval(from, to),
           min_doc_count: 0,
           extended_bounds: { min: from, max: to },
@@ -589,7 +589,7 @@ export async function getLatencyByRouteOverTime(
           { exists: { field: "attributes.http.target" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -604,13 +604,13 @@ export async function getLatencyByRouteOverTime(
         aggs: {
           over_time: {
             date_histogram: {
-              field: "@timestamp",
+              field: "startTime",
               fixed_interval: autoInterval(from, to),
               min_doc_count: 0,
               extended_bounds: { min: from, max: to },
             },
             aggs: {
-              avg_latency: { avg: { field: "durationInMillis" } },
+              avg_latency: { avg: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" } } },
             },
           },
         },
@@ -664,7 +664,7 @@ export async function getLatencyByRoute(
           { exists: { field: "attributes.http.target" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -677,7 +677,7 @@ export async function getLatencyByRoute(
           order: { _count: "desc" },
         },
         aggs: {
-          p95: { percentiles: { field: "durationInMillis", percents: [95] } },
+          p95: { percentiles: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" }, percents: [95] } },
         },
       },
     },
@@ -716,7 +716,7 @@ export async function getOpDistribution(
       bool: {
         must: [{ term: { "kind.keyword": "Server" } }],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -759,7 +759,7 @@ export async function getTopEndpoints(
           { exists: { field: "attributes.http.target" } },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -772,8 +772,8 @@ export async function getTopEndpoints(
           order: { _count: "desc" },
         },
         aggs: {
-          avg_latency: { avg: { field: "durationInMillis" } },
-          p95: { percentiles: { field: "durationInMillis", percents: [95] } },
+          avg_latency: { avg: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" } } },
+          p95: { percentiles: { script: { lang: "painless", source: "doc['endTime'].value.toInstant().toEpochMilli() - doc['startTime'].value.toInstant().toEpochMilli()" }, percents: [95] } },
         },
       },
     },
@@ -821,7 +821,7 @@ export async function getAppointmentsOverTime(
           },
         ],
         filter: [
-          { range: { "@timestamp": timeRange(from, to) } },
+          { range: { startTime: timeRange(from, to) } },
           ...serviceFilter(serviceName),
         ],
       },
@@ -829,7 +829,7 @@ export async function getAppointmentsOverTime(
     aggs: {
       over_time: {
         date_histogram: {
-          field: "@timestamp",
+          field: "startTime",
           fixed_interval: autoInterval(from, to),
           min_doc_count: 0,
           extended_bounds: { min: from, max: to },

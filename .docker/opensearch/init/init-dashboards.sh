@@ -29,5 +29,6 @@ DASHBOARDS_DIR="$(dirname "$0")/dashboards"
 . "${DASHBOARDS_DIR}/logs.sh"
 . "${DASHBOARDS_DIR}/apm.sh"
 . "${DASHBOARDS_DIR}/app-exemplo.sh"
+. "${DASHBOARDS_DIR}/otel-logs.sh"
 
 echo "[osd-init] Provisionamento concluido."

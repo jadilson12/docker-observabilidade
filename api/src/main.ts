@@ -5,15 +5,16 @@ validateEnv(process.env as Record<string, unknown>);
 import { initTelemetry } from './telemetry';
 void initTelemetry();
 
-import { ConsoleLogger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { OtelLogger } from './common/otel-logger';
 import { setupSwagger } from './common/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: new ConsoleLogger({
+    logger: new OtelLogger({
       prefix: process.env.APP_NAME ?? 'api',
     }),
   });

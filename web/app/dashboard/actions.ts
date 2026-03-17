@@ -6,7 +6,7 @@ if (!process.env.OPENSEARCH_URL) {
   );
 }
 const OS = process.env.OPENSEARCH_URL;
-const TRACES_INDEX = "ss4o_traces-otel-application-example";
+const TRACES_INDEX = "ss4o_traces-otel-application-example-api";
 const LOGS_INDEX = "docker-logs";
 const SERVICE_PREFIX = "application-example-";
 
@@ -27,10 +27,10 @@ function timeRange(from: string, to: string) {
 
 function serviceFilter(serviceName?: string): object[] {
   if (serviceName) {
-    return [{ term: { "serviceName.keyword": serviceName } }];
+    return [{ term: { "resource.service.name.keyword": serviceName } }];
   }
   // sem serviço específico → restringe ao prefixo application-example-*
-  return [{ wildcard: { "serviceName.keyword": `${SERVICE_PREFIX}*` } }];
+  return [{ wildcard: { "resource.service.name.keyword": `${SERVICE_PREFIX}*` } }];
 }
 
 export interface KpiData {
@@ -61,14 +61,14 @@ export async function getServices(): Promise<string[]> {
       bool: {
         filter: [
           { term: { "kind.keyword": "Server" } },
-          { wildcard: { "serviceName.keyword": `${SERVICE_PREFIX}*` } },
+          { wildcard: { "resource.service.name.keyword": `${SERVICE_PREFIX}*` } },
         ],
       },
     },
     aggs: {
       services: {
         terms: {
-          field: "serviceName.keyword",
+          field: "resource.service.name.keyword",
           size: 20,
           order: { _count: "desc" },
         },
@@ -96,7 +96,7 @@ export async function getServiceCapabilities(
       bool: {
         filter: [
           { term: { "kind.keyword": "Server" } },
-          { term: { "serviceName.keyword": serviceName } },
+          { term: { "resource.service.name.keyword": serviceName } },
         ],
       },
     },
@@ -105,10 +105,10 @@ export async function getServiceCapabilities(
         filter: {
           bool: {
             should: [
-              { prefix: { "name.keyword": "POST /users" } },
-              { prefix: { "name.keyword": "GET /users" } },
-              { prefix: { "name.keyword": "DELETE /users" } },
-              { prefix: { "name.keyword": "PUT /users" } },
+              { prefix: { "name.keyword": "POST /v1/users" } },
+              { prefix: { "name.keyword": "GET /v1/users" } },
+              { prefix: { "name.keyword": "DELETE /v1/users" } },
+              { prefix: { "name.keyword": "PUT /v1/users" } },
             ],
             minimum_should_match: 1,
           },
@@ -118,10 +118,10 @@ export async function getServiceCapabilities(
         filter: {
           bool: {
             should: [
-              { prefix: { "name.keyword": "POST /appointments" } },
-              { prefix: { "name.keyword": "GET /appointments" } },
-              { prefix: { "name.keyword": "DELETE /appointments" } },
-              { prefix: { "name.keyword": "PUT /appointments" } },
+              { prefix: { "name.keyword": "POST /v1/appointments" } },
+              { prefix: { "name.keyword": "GET /v1/appointments" } },
+              { prefix: { "name.keyword": "DELETE /v1/appointments" } },
+              { prefix: { "name.keyword": "PUT /v1/appointments" } },
             ],
             minimum_should_match: 1,
           },
@@ -169,7 +169,7 @@ export async function getKpis(
         filter: {
           bool: {
             must: [
-              { term: { "name.keyword": "POST /users" } },
+              { term: { "name.keyword": "POST /v1/users" } },
               {
                 range: { "attributes.http.status_code": { gte: 200, lt: 300 } },
               },
@@ -178,19 +178,19 @@ export async function getKpis(
         },
       },
       users_deleted: {
-        filter: { term: { "name.keyword": "DELETE /users/:id" } },
+        filter: { term: { "name.keyword": "DELETE /v1/users/:id" } },
       },
       users_updated: {
-        filter: { term: { "name.keyword": "PUT /users/:id" } },
+        filter: { term: { "name.keyword": "PUT /v1/users/:id" } },
       },
       users_viewed: {
-        filter: { term: { "name.keyword": "GET /users/:id" } },
+        filter: { term: { "name.keyword": "GET /v1/users/:id" } },
       },
       appointments_created: {
         filter: {
           bool: {
             must: [
-              { term: { "name.keyword": "POST /appointments" } },
+              { term: { "name.keyword": "POST /v1/appointments" } },
               {
                 range: { "attributes.http.status_code": { gte: 200, lt: 300 } },
               },
@@ -199,13 +199,13 @@ export async function getKpis(
         },
       },
       appointments_deleted: {
-        filter: { term: { "name.keyword": "DELETE /appointments/:id" } },
+        filter: { term: { "name.keyword": "DELETE /v1/appointments/:id" } },
       },
       appointments_updated: {
-        filter: { term: { "name.keyword": "PUT /appointments/:id" } },
+        filter: { term: { "name.keyword": "PUT /v1/appointments/:id" } },
       },
       appointments_viewed: {
-        filter: { term: { "name.keyword": "GET /appointments/:id" } },
+        filter: { term: { "name.keyword": "GET /v1/appointments/:id" } },
       },
     },
   };
@@ -338,7 +338,7 @@ export async function getRequestsOverTime(
           extended_bounds: { min: from, max: to },
         },
         aggs: {
-          by_service: { terms: { field: "serviceName.keyword", size: 10 } },
+          by_service: { terms: { field: "resource.service.name.keyword", size: 10 } },
         },
       },
     },
@@ -812,10 +812,10 @@ export async function getAppointmentsOverTime(
           {
             bool: {
               should: [
-                { term: { "name.keyword": "POST /appointments" } },
-                { term: { "name.keyword": "GET /appointments/:id" } },
-                { term: { "name.keyword": "PUT /appointments/:id" } },
-                { term: { "name.keyword": "DELETE /appointments/:id" } },
+                { term: { "name.keyword": "POST /v1/appointments" } },
+                { term: { "name.keyword": "GET /v1/appointments/:id" } },
+                { term: { "name.keyword": "PUT /v1/appointments/:id" } },
+                { term: { "name.keyword": "DELETE /v1/appointments/:id" } },
               ],
             },
           },
@@ -839,7 +839,7 @@ export async function getAppointmentsOverTime(
             filter: {
               bool: {
                 must: [
-                  { term: { "name.keyword": "POST /appointments" } },
+                  { term: { "name.keyword": "POST /v1/appointments" } },
                   {
                     range: {
                       "attributes.http.status_code": { gte: 200, lt: 300 },
@@ -850,13 +850,13 @@ export async function getAppointmentsOverTime(
             },
           },
           viewed: {
-            filter: { term: { "name.keyword": "GET /appointments/:id" } },
+            filter: { term: { "name.keyword": "GET /v1/appointments/:id" } },
           },
           updated: {
-            filter: { term: { "name.keyword": "PUT /appointments/:id" } },
+            filter: { term: { "name.keyword": "PUT /v1/appointments/:id" } },
           },
           deleted: {
-            filter: { term: { "name.keyword": "DELETE /appointments/:id" } },
+            filter: { term: { "name.keyword": "DELETE /v1/appointments/:id" } },
           },
         },
       },

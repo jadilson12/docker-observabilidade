@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 upsert "index-pattern" "ip-logs" '{
   "attributes": {
-    "title": "ss4o_logs-otel-application-example",
+    "title": "ss4o_logs-otel-application-example-api",
     "timeFieldName": "@timestamp"
   }
 }'
@@ -17,8 +17,8 @@ upsert "index-pattern" "ip-docker-logs" '{
 
 upsert "index-pattern" "ip-traces" '{
   "attributes": {
-    "title": "ss4o_traces-otel-application-example",
-    "timeFieldName": "@timestamp"
+    "title": "ss4o_traces-otel-application-example-api",
+    "timeFieldName": "startTime"
   }
 }'
 

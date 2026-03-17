@@ -24,14 +24,14 @@ exporters:
       tls:
         insecure: true
     dataset: otel
-    namespace: application-example
+    namespace: application-example-api
   opensearch/logs:
     http:
       endpoint: http://opensearch:9200
       tls:
         insecure: true
     dataset: otel
-    namespace: application-example
+    namespace: application-example-api
   prometheus:
     endpoint: "0.0.0.0:8889"
 

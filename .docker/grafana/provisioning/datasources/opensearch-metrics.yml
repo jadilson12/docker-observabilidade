@@ -1,14 +1,14 @@
 apiVersion: 1
 
 datasources:
-  - name: OpenSearch-Traces
+  - name: OpenSearch-Metrics
     type: grafana-opensearch-datasource
-    uid: opensearch-traces
+    uid: opensearch-metrics
     access: proxy
     url: http://opensearch:9200
     editable: true
     jsonData:
-      database: "ss4o_traces-otel-application-example-api"
+      database: "ss4o_metrics-otel-application-example-api"
       flavor: opensearch
       version: "2.19.0"
       timeField: "@timestamp"

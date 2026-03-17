@@ -8,16 +8,16 @@ datasources:
     editable: true
     jsonData:
       tracesToLogsV2:
-        datasourceUid: opensearch
+        datasourceUid: opensearch-logs
         spanStartTimeShift: "-1h"
         spanEndTimeShift: "1h"
         filterByTraceID: true
         filterBySpanID: false
       serviceMap:
-        datasourceUid: prometheus
+        datasourceUid: PBFA97CFB590B2093
       nodeGraph:
         enabled: true
       search:
         hide: false
       lokiSearch:
-        datasourceUid: opensearch
+        datasourceUid: opensearch-logs

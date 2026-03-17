@@ -1,6 +1,7 @@
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import * as promClient from 'prom-client';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
@@ -8,6 +9,7 @@ import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import * as http from 'http';
 import type { IncomingMessage } from 'http';
 
 let sdk: NodeSDK | undefined;
@@ -26,6 +28,8 @@ export function initTelemetry() {
   const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT!;
   const metricsPort = Number(process.env.OTEL_PROMETHEUS_PORT ?? 9464);
 
+  const prometheusExporter = new PrometheusExporter({ preventServerStart: true });
+
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: serviceName,
@@ -33,7 +37,7 @@ export function initTelemetry() {
       'deployment.environment': process.env.NODE_ENV ?? 'development',
     }),
     traceExporter: new OTLPTraceExporter({ url: endpoint }),
-    metricReader: new PrometheusExporter({ port: metricsPort }),
+    metricReader: prometheusExporter,
     logRecordProcessor: new BatchLogRecordProcessor(new OTLPLogExporter({ url: endpoint })),
     instrumentations: [
       new HttpInstrumentation({
@@ -47,7 +51,27 @@ export function initTelemetry() {
     ],
   });
 
+  promClient.collectDefaultMetrics();
+
   sdk.start();
+
+  const metricsServer = http.createServer((req, res) => {
+    if (req.url === '/metrics') {
+      prometheusExporter.getMetricsRequestHandler(req, res);
+      return;
+    }
+    if (req.url === '/metrics/nodejs') {
+      void promClient.register.metrics().then((metrics) => {
+        res.setHeader('Content-Type', promClient.register.contentType);
+        res.end(metrics);
+      });
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+
+  metricsServer.listen(metricsPort);
 
   const shutdown = async () => {
     try {
